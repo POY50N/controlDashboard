@@ -2,6 +2,7 @@ const express = require('express');
 const { requireRole } = require('../lib/session');
 const { nowIso } = require('../lib/time');
 const { isTitular, visibleOwners } = require('../lib/access');
+const { AREAS, CARGOS, padraoDoCargo, sanitizar, areasDoAdmin, requireArea } = require('../lib/areas');
 
 // Colaboradores são contas administrativas do escritório (a equipe do
 // titular). Ficam na mesma tabela `admins`, então entram pelo mesmo login e
@@ -10,12 +11,14 @@ const { isTitular, visibleOwners } = require('../lib/access');
 // O cadastro nunca define a senha: o colaborador cria a dele no primeiro
 // acesso, exatamente como os clientes fazem.
 
-const CARGOS = ['titular', 'advogado', 'estagiario', 'secretaria', 'financeiro', 'outro'];
+const CARGO_KEYS = CARGOS.map((c) => c.key);
 
 function onlyDigits(v) { return (v || '').replace(/\D/g, ''); }
 function normalizeUser(v) { return (v || '').trim().toLowerCase(); }
 
 function publicView(row) {
+  let areas = [];
+  try { areas = JSON.parse(row.permissoes || '[]'); } catch (e) { areas = []; }
   return {
     id: row.id,
     nome: row.nome,
@@ -26,7 +29,8 @@ function publicView(row) {
     email: row.email,
     telefone: row.telefone,
     temSenha: !!row.password_hash,
-    titular: row.cargo === 'titular'
+    titular: row.cargo === 'titular',
+    areas: row.cargo === 'titular' ? AREAS.map((a) => a.key) : sanitizar(areas)
   };
 }
 
@@ -34,16 +38,30 @@ module.exports = function colaboradoresRoutes(db) {
   const router = express.Router();
   router.use(requireRole(db, 'admin'));
 
-  router.get('/', (req, res) => {
+  // Catálogo de quadros e áreas + o que vem pré-marcado em cada quadro.
+  // A tela de cadastro monta os campos a partir daqui.
+  router.get('/opcoes', (req, res) => {
+    res.json({
+      areas: AREAS,
+      cargos: CARGOS.filter((c) => c.key !== 'titular').map((c) => ({
+        ...c, padrao: padraoDoCargo(c.key)
+      }))
+    });
+  });
+
+  router.get('/', requireArea(db, 'colaboradores'), (req, res) => {
     const rows = db.all('SELECT * FROM admins WHERE ativo = 1 ORDER BY (cargo = "titular") DESC, nome ASC');
     res.json({ colaboradores: rows.map(publicView), euId: req.session.subject_id });
   });
 
-  router.post('/', (req, res) => {
+  router.post('/', requireArea(db, 'colaboradores'), (req, res) => {
     const b = req.body || {};
     const nome = (b.nome || '').trim();
     const username = normalizeUser(b.username);
-    const cargo = CARGOS.includes(b.cargo) ? b.cargo : 'outro';
+    const cargo = CARGO_KEYS.includes(b.cargo) ? b.cargo : 'outro';
+    // Se a tela mandou a lista de áreas, ela manda; senão cai no padrão do
+    // quadro escolhido.
+    const areas = Array.isArray(b.areas) ? sanitizar(b.areas) : padraoDoCargo(cargo);
 
     if (!nome) return res.status(400).json({ error: 'Informe o nome do colaborador.' });
     if (username.length < 3) return res.status(400).json({ error: 'O usuário precisa ter ao menos 3 caracteres.' });
@@ -57,14 +75,26 @@ module.exports = function colaboradoresRoutes(db) {
 
     const ts = nowIso();
     const id = db.insert(
-      `INSERT INTO admins (username, nome, oab, documento, telefone, email, cargo, ativo, password_hash, created_at, updated_at, dirty)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 1, NULL, ?, ?, 1)`,
+      `INSERT INTO admins (username, nome, oab, documento, telefone, email, cargo, permissoes, ativo, password_hash, created_at, updated_at, dirty)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, NULL, ?, ?, 1)`,
       [username, nome, (b.oab || '').trim() || null, onlyDigits(b.documento) || null,
-        (b.telefone || '').trim() || null, (b.email || '').trim() || null, cargo, ts, ts]
+        (b.telefone || '').trim() || null, (b.email || '').trim() || null, cargo, JSON.stringify(areas), ts, ts]
     );
 
-    db.recordChange('admins', id, 'create', `Colaborador "${nome}" cadastrado (${cargo}).`, { nome, username, cargo });
+    db.recordChange('admins', id, 'create', `Colaborador "${nome}" cadastrado (${cargo}, ${areas.length} área(s) liberada(s)).`, { nome, username, cargo, areas });
     res.status(201).json({ id, colaborador: publicView(db.get('SELECT * FROM admins WHERE id = ?', [id])) });
+  });
+
+  // Ajusta as áreas de quem já está cadastrado (o quadro continua o mesmo).
+  router.put('/:id/areas', requireArea(db, 'colaboradores'), (req, res) => {
+    const alvo = db.get('SELECT * FROM admins WHERE id = ? AND ativo = 1', [req.params.id]);
+    if (!alvo) return res.status(404).json({ error: 'Colaborador não encontrado.' });
+    if (alvo.cargo === 'titular') return res.status(403).json({ error: 'O titular tem acesso a tudo e não pode ser restringido.' });
+
+    const areas = sanitizar(req.body.areas);
+    db.run('UPDATE admins SET permissoes = ?, updated_at = ?, dirty = 1 WHERE id = ?', [JSON.stringify(areas), nowIso(), alvo.id]);
+    db.recordChange('admins', alvo.id, 'update', `Áreas de "${alvo.nome}" atualizadas (${areas.length} liberada(s)).`, { areas });
+    res.json({ ok: true, areas });
   });
 
   // --- Permissões -----------------------------------------------------
@@ -148,7 +178,7 @@ module.exports = function colaboradoresRoutes(db) {
     });
   });
 
-  router.delete('/:id', (req, res) => {
+  router.delete('/:id', requireArea(db, 'colaboradores'), (req, res) => {
     const alvo = db.get('SELECT * FROM admins WHERE id = ? AND ativo = 1', [req.params.id]);
     if (!alvo) return res.status(404).json({ error: 'Colaborador não encontrado.' });
     if (alvo.cargo === 'titular') return res.status(403).json({ error: 'O titular do escritório não pode ser removido.' });

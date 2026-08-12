@@ -5,7 +5,7 @@
 
 const TABLES = {
   admins: {
-    columns: ['id', 'username', 'nome', 'oab', 'documento', 'telefone', 'email', 'cargo', 'ativo', 'password_hash', 'created_at', 'updated_at'],
+    columns: ['id', 'username', 'nome', 'oab', 'documento', 'telefone', 'email', 'cargo', 'permissoes', 'ativo', 'password_hash', 'created_at', 'updated_at'],
     hasDirty: true,
     label: (row) => `Colaborador "${row.nome}"`
   },

@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('desktop', {
   sync: (opts) => ipcRenderer.invoke('sync:run', opts),
   check: () => ipcRenderer.invoke('sync:check'),
   resolve: (table, rowId, choice) => ipcRenderer.invoke('sync:resolve', { table, rowId, choice }),
+  discardLocal: () => ipcRenderer.invoke('sync:discardLocal'),
   getAutoLaunch: () => ipcRenderer.invoke('autolaunch:get'),
   setAutoLaunch: (enabled) => ipcRenderer.invoke('autolaunch:set', enabled),
   onStateChange: (cb) => {

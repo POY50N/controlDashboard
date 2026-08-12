@@ -28,8 +28,45 @@ function createDatabase(dbPath) {
 
     const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
     state.db.exec(schema);
+    migrate();
     persist();
     return api;
+  }
+
+  // `CREATE TABLE IF NOT EXISTS` não acrescenta colunas novas a uma tabela
+  // que já existe. Bancos criados por versões anteriores - como o do app
+  // desktop, que fica em %APPDATA% e sobrevive às atualizações - precisam
+  // ganhar as colunas na mão, senão o servidor quebra ao consultá-las.
+  const COLUNAS_ESPERADAS = [
+    ['admins', 'documento', 'TEXT'],
+    ['admins', 'telefone', 'TEXT'],
+    ['admins', 'email', 'TEXT'],
+    ['admins', 'cargo', "TEXT NOT NULL DEFAULT 'colaborador'"],
+    ['admins', 'permissoes', "TEXT NOT NULL DEFAULT '[]'"],
+    ['admins', 'ativo', 'INTEGER NOT NULL DEFAULT 1'],
+    ['clients', 'username', 'TEXT'],
+    ['clients', 'owner_id', 'INTEGER']
+  ];
+
+  function migrate() {
+    for (const [tabela, coluna, tipo] of COLUNAS_ESPERADAS) {
+      const info = all(`PRAGMA table_info(${tabela})`);
+      if (!info.length) continue; // tabela ainda não existe
+      if (info.some((c) => c.name === coluna)) continue;
+      state.db.exec(`ALTER TABLE ${tabela} ADD COLUMN ${coluna} ${tipo}`);
+    }
+
+    // Banco antigo não tinha o conceito de titular: promove o admin mais
+    // antigo, senão ninguém teria acesso total.
+    const temTitular = get("SELECT id FROM admins WHERE cargo = 'titular' LIMIT 1");
+    if (!temTitular) {
+      const primeiro = get('SELECT id FROM admins ORDER BY id ASC LIMIT 1');
+      if (primeiro) state.db.exec(`UPDATE admins SET cargo = 'titular' WHERE id = ${primeiro.id}`);
+    }
+
+    // Clientes sem responsável passam a ser do titular.
+    const titular = get("SELECT id FROM admins WHERE cargo = 'titular' ORDER BY id ASC LIMIT 1");
+    if (titular) state.db.exec(`UPDATE clients SET owner_id = ${titular.id} WHERE owner_id IS NULL`);
   }
 
   function persist() {

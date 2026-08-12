@@ -24,12 +24,14 @@ npm run server    # http://localhost:4178
 | OAB | `OAB/SP 123.456` (ou só `123456`) |
 | CPF próprio | `153.509.460-56` |
 
-**Colaboradores** — a equipe do escritório usa o mesmo painel:
+**Colaboradores** — a equipe usa o mesmo painel, cada um com o seu perfil:
 
-| Colaborador | Função | Usuário | CPF | Senha | Carteira |
+| Colaborador | Quadro | Usuário | Senha | Áreas | Carteira |
 |---|---|---|---|---|---|
-| Beatriz Nunes | Secretária | `beatriz` | `394.478.560-05` | `colab123` | Ana Paula Costa, Carlos Menezes |
-| Rafael Moreira | Estagiário | `rafael` | `681.694.610-70` | *(primeiro acesso)* | Ricardo, Renata, Padaria Estrela |
+| Helena Prado | Sócia | `helena` | `socia123` | todas | — |
+| Marcos Tavares | Advogado | `marcos` | `adv123` | tudo menos contas do escritório e equipe | Construtora Alvorada |
+| Beatriz Nunes | Secretária | `beatriz` | `colab123` | visão, clientes, processos, financeiro | Ana Paula Costa, Carlos Menezes |
+| Rafael Moreira | Estagiário | `rafael` | *(primeiro acesso)* | só clientes e processos | Ricardo, Renata, Padaria Estrela |
 
 O titular (Jorge) responde pelos demais clientes e **vê todos**.
 
@@ -115,6 +117,28 @@ possibilidade de clique**.
 No banco de exemplo: a Beatriz autorizou o Rafael (ele vê a carteira dela),
 mas o Rafael não autorizou a Beatriz — então, para ela, o nome dele aparece
 apagado.
+
+### Áreas do painel por quadro
+
+Ao cadastrar um colaborador escolhe-se o **quadro**, e as áreas do painel já
+vêm **pré-marcadas** conforme o quadro — mas tudo continua editável antes de
+salvar (há também "Restaurar padrão do quadro").
+
+| Quadro | Vem marcado |
+|---|---|
+| **Sócio(a)** | tudo, inclusive contas do escritório e equipe |
+| **Advogado(a)** | visão, clientes, processos, financeiro, exportar — **sem** contas do escritório |
+| **Secretário(a)** | visão, clientes, processos, financeiro |
+| **Financeiro** | visão, financeiro dos clientes, contas do escritório |
+| **Estagiário(a)** / Outro | **nada** — cada área é marcada à mão |
+
+O **titular** ignora essa lista: enxerga todas as áreas sempre.
+
+As sete áreas são: `visao`, `clientes`, `processos`, `financeiro` (honorários
+dos clientes), `escritorio` (contas internas), `exportar` e `colaboradores`
+(cadastrar equipe). Quem não tem uma área não a vê no menu **e** recebe **403**
+se chamar a rota direto — inclusive **"Cadastrar colaborador", que só aparece
+para quem recebeu a área `colaboradores`**.
 
 ### Cadastrar colaborador
 
@@ -208,18 +232,31 @@ para a cópia temporária que o Windows cria ao executá-lo.
 
 ### Sincronização
 
-Um indicador no canto inferior direito mostra o estado: *Trabalhando offline*,
-*N alterações para enviar*, *Dados sincronizados* ou *conflitos para revisar*.
+O app **procura a conexão sozinho** — a cada 10 s enquanto está offline e a
+cada 60 s quando conectado. No rodapé há apenas um indicador discreto:
+**Offline**, **Online**, *N para enviar* ou *conflitos*. Clicando nele abre-se
+o detalhamento.
 
 Toda alteração feita sem conexão é registrada em um diário (`change_log`) com
-uma descrição em português. Quando a internet volta:
+uma descrição em português. **Ao sair do estado offline**, se algo foi alterado
+na máquina, aparece sozinho um pop-up perguntando o que fazer:
 
-1. **O aviso aparece sozinho**, com a lista explícita e simples do que foi
-   alterado naquele computador (ex.: *"Cliente Fernanda Lima Souza cadastrado"*).
-2. O administrador clica em **"Enviar e sincronizar"** para subir as mudanças.
-3. Se **os dois lados** alteraram o mesmo registro, nada é sobrescrito em
-   silêncio: o sistema mostra as duas versões lado a lado e pergunta qual
-   manter — **"Enviar a minha versão"** ou **"Manter a do servidor"**.
+- **Manter os dados deste computador** — envia o que foi feito offline;
+- **Usar os dados do servidor** — descarta as alterações locais e baixa a
+  versão da web (com confirmação, porque é destrutivo);
+- **Ver o que mudou neste computador** — abre a lista item a item;
+- **Decidir depois** — fecha sem sincronizar.
+
+Se **os dois lados** alteraram o mesmo registro, nada é sobrescrito em
+silêncio: o sistema mostra as duas versões lado a lado e pergunta qual manter.
+
+### Atualização do banco existente
+
+O banco do app fica em `%APPDATA%\painel-jorge-silva-advocacia\local.sqlite` e
+**sobrevive às atualizações**. Como `CREATE TABLE IF NOT EXISTS` não acrescenta
+colunas novas, `server/db/index.js` roda uma **migração automática** ao abrir:
+adiciona as colunas que faltam, promove o admin mais antigo a titular se não
+houver nenhum e atribui a ele os clientes sem responsável.
 
 Para testar a sincronização localmente, suba a instância que representa a web:
 

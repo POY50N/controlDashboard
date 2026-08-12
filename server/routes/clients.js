@@ -2,6 +2,7 @@ const express = require('express');
 const { requireRole } = require('../lib/session');
 const { nowIso } = require('../lib/time');
 const { visibleOwners, ownerScope, canSeeClient, SEM_PERMISSAO } = require('../lib/access');
+const { requireArea } = require('../lib/areas');
 
 function onlyDigits(v) { return (v || '').replace(/\D/g, ''); }
 
@@ -18,6 +19,7 @@ function tagForClient(db, clientId) {
 module.exports = function clientsRoutes(db) {
   const router = express.Router();
   router.use(requireRole(db, 'admin'));
+  router.use(requireArea(db, 'clientes'));
 
   router.get('/', (req, res) => {
     const owners = visibleOwners(db, req.session.subject_id);

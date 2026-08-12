@@ -22,25 +22,68 @@
     return `<span class="tag tag-${kind}">${label}</span>`;
   }
 
+  // Áreas do painel liberadas para quem está logado.
+  let MINHAS_AREAS = [];
+  const podeVer = (area) => MINHAS_AREAS.includes(area);
+
   // ---------- auth guard ----------
   async function boot() {
+    let session;
     try {
-      const session = await Api.get('/api/auth/session');
+      session = await Api.get('/api/auth/session');
       if (session.role !== 'admin') throw new Error('not admin');
       el('adminNome').textContent = session.nome;
       el('adminOab').textContent = session.oab || (session.cargo ? CARGO_LABEL[session.cargo] || session.cargo : '');
       el('adminInicial').textContent = (session.nome || '?').charAt(0).toUpperCase();
+      MINHAS_AREAS = session.areas || [];
     } catch (e) {
       window.location.href = 'acesso.html';
       return;
     }
+
+    aplicarAreas();
     initNav();
     initClientes();
     initNovoCliente();
     initProcessos();
     initFinanceiro();
     initEscritorio();
-    loadVisaoGeral();
+
+    // Abre na primeira área que a pessoa realmente tem.
+    const inicial = ['visao', 'clientes', 'processos', 'financeiro', 'escritorio'].find(podeVer);
+    if (inicial) goTo(inicial); else mostrarSemAcesso();
+  }
+
+  // Esconde da tela tudo o que o perfil não alcança. O servidor recusa de
+  // qualquer forma; isto evita oferecer caminhos que dariam erro.
+  function aplicarAreas() {
+    const porArea = {
+      visao: ['[data-nav="visao"]'],
+      clientes: ['[data-nav="clientes"]', '[data-nav="novo"]'],
+      processos: ['[data-nav="processos"]'],
+      financeiro: ['[data-nav="financeiro"]'],
+      escritorio: ['[data-nav="escritorio"]'],
+      exportar: ['#exportToggle', '#exportMenu'],
+      colaboradores: ['#menuColaborador']
+    };
+    Object.entries(porArea).forEach(([area, seletores]) => {
+      if (podeVer(area)) return;
+      seletores.forEach((s) => document.querySelectorAll(s).forEach((n) => n.classList.add('hidden')));
+    });
+  }
+
+  function mostrarSemAcesso() {
+    document.querySelectorAll('.section').forEach((s) => s.classList.remove('active'));
+    const main = document.querySelector('main');
+    const aviso = document.createElement('div');
+    aviso.style.cssText = 'display:flex;flex-direction:column;gap:12px;align-items:center;justify-content:center;padding:80px 24px;text-align:center';
+    aviso.innerHTML = `
+      <span class="eyebrow">SEM ÁREAS LIBERADAS</span>
+      <h1 style="margin:0;font:300 30px var(--font-serif);color:var(--ink)">Seu perfil ainda não tem acesso a nenhuma área</h1>
+      <p style="margin:0;max-width:420px;font:300 15px/1.75 var(--font-serif);color:var(--muted)">
+        Peça ao titular do escritório para liberar as áreas do painel que você precisa acessar.
+      </p>`;
+    main.appendChild(aviso);
   }
 
   async function logout() {
@@ -523,7 +566,22 @@
     });
   }
 
+  let OPCOES = null; // { areas, cargos } — catálogo vindo do servidor
+
   async function openColaboradorModal() {
+    if (!OPCOES) OPCOES = await Api.get('/api/colaboradores/opcoes');
+
+    const cargoOptions = OPCOES.cargos
+      .map((c) => `<option value="${c.key}"${c.key === 'secretaria' ? ' selected' : ''}>${c.label}</option>`).join('');
+    const areaChecks = OPCOES.areas.map((a) => `
+      <label style="display:flex;align-items:flex-start;gap:10px;padding:11px 13px;border:1px solid var(--border-soft);background:var(--bg);cursor:pointer">
+        <input type="checkbox" class="cbArea" value="${a.key}" style="margin-top:3px;accent-color:#b08d4a">
+        <span style="display:flex;flex-direction:column;gap:2px">
+          <span style="font:400 14.5px var(--font-serif);color:var(--ink)">${a.label}</span>
+          <span style="font:300 12.5px/1.5 var(--font-serif);color:var(--muted)">${a.desc}</span>
+        </span>
+      </label>`).join('');
+
     openModal(`
       <h2 style="margin:0 0 6px;font:300 26px var(--font-serif)">Cadastrar colaborador</h2>
       <p style="margin:0 0 20px;font:300 14.5px/1.7 var(--font-serif);color:var(--muted)">
@@ -532,13 +590,15 @@
       <form id="colabForm" style="display:flex;flex-direction:column;gap:14px">
         <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:14px">
           <div class="field"><label class="label">NOME COMPLETO</label><input id="cbNome" required placeholder="Beatriz Nunes"></div>
-          <div class="field"><label class="label">FUNÇÃO</label><select id="cbCargo">
-            <option value="advogado">Advogado(a)</option>
-            <option value="estagiario">Estagiário(a)</option>
-            <option value="secretaria" selected>Secretário(a)</option>
-            <option value="financeiro">Financeiro</option>
-            <option value="outro">Outro</option>
-          </select></div>
+          <div class="field"><label class="label">QUADRO</label><select id="cbCargo">${cargoOptions}</select></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;padding:16px 18px;background:#f2ede1;border:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:14px">
+            <span class="label">ÁREAS LIBERADAS NO PAINEL</span>
+            <button type="button" id="cbRestaurar" class="btn-text">Restaurar padrão do quadro</button>
+          </div>
+          <span id="cbCargoDesc" style="font:300 13px/1.6 var(--font-serif);color:var(--muted-2)"></span>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">${areaChecks}</div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
           <div class="field"><label class="label">USUÁRIO DE ACESSO</label><input id="cbUser" required placeholder="beatriz" autocapitalize="off"></div>
@@ -559,16 +619,33 @@
         <div id="listaColaboradores" style="display:flex;flex-direction:column;gap:2px;margin-top:12px"></div>
       </div>`);
 
+    // Trocar o quadro remarca as áreas com o padrão dele — mas tudo continua
+    // editável à mão depois.
+    function aplicarPadraoDoCargo() {
+      const cargo = OPCOES.cargos.find((c) => c.key === el('cbCargo').value);
+      if (!cargo) return;
+      document.querySelectorAll('.cbArea').forEach((chk) => { chk.checked = cargo.padrao.includes(chk.value); });
+      el('cbCargoDesc').textContent = cargo.padrao.length
+        ? cargo.descricao
+        : `${cargo.descricao} Nenhuma área vem marcada — escolha uma a uma.`;
+    }
+    el('cbCargo').addEventListener('change', aplicarPadraoDoCargo);
+    el('cbRestaurar').addEventListener('click', aplicarPadraoDoCargo);
+    aplicarPadraoDoCargo();
+
     el('cbCancel').addEventListener('click', closeModal);
     el('colabForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      const areas = [...document.querySelectorAll('.cbArea:checked')].map((c) => c.value);
       try {
         await Api.post('/api/colaboradores', {
           nome: el('cbNome').value, cargo: el('cbCargo').value, username: el('cbUser').value,
-          documento: el('cbDoc').value, oab: el('cbOab').value, email: el('cbEmail').value, telefone: el('cbTel').value
+          documento: el('cbDoc').value, oab: el('cbOab').value, email: el('cbEmail').value,
+          telefone: el('cbTel').value, areas
         });
-        toast(`Colaborador "${el('cbNome').value.trim()}" cadastrado.`);
+        toast(`Colaborador "${el('cbNome').value.trim()}" cadastrado com ${areas.length} área(s).`);
         e.target.reset();
+        aplicarPadraoDoCargo();
         carregarColaboradores();
       } catch (err) {
         toast(err.message || 'Não foi possível cadastrar o colaborador.', 'error');
@@ -582,12 +659,19 @@
     const box = el('listaColaboradores');
     if (!box) return;
     const res = await Api.get('/api/colaboradores');
+    const rotuloArea = {};
+    (OPCOES ? OPCOES.areas : []).forEach((a) => { rotuloArea[a.key] = a.label; });
+
     box.innerHTML = res.colaboradores.map((c) => {
       const podeRemover = !c.titular && c.id !== res.euId;
+      const areasTxt = c.titular
+        ? 'Todas as áreas (titular)'
+        : (c.areas.length ? c.areas.map((k) => rotuloArea[k] || k).join(' · ') : 'Nenhuma área liberada');
       return `<div style="display:grid;grid-template-columns:1fr auto auto;gap:14px;align-items:center;padding:13px 4px;border-bottom:1px solid #eee7d9">
         <div style="display:flex;flex-direction:column;gap:3px">
           <span style="font:400 15.5px var(--font-serif);color:var(--ink)">${c.nome}${c.id === res.euId ? ' <span style="font:300 12.5px var(--font-serif);color:var(--muted)">(você)</span>' : ''}</span>
           <span style="font:700 8.5px var(--font-mono);letter-spacing:.14em;color:var(--muted)">${(CARGO_LABEL[c.cargo] || c.cargo).toUpperCase()} · ${c.username}</span>
+          <span style="font:300 12.5px/1.5 var(--font-serif);color:${c.areas.length || c.titular ? 'var(--muted-2)' : 'var(--danger-ink)'}">${areasTxt}</span>
         </div>
         ${c.temSenha ? tagHtml('ATIVO', 'done') : tagHtml('1º ACESSO', 'open')}
         ${podeRemover ? `<button class="btn-text" data-remcolab="${c.id}" data-nome="${c.nome}">Remover</button>` : '<span></span>'}

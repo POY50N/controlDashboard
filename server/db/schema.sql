@@ -7,6 +7,9 @@ CREATE TABLE IF NOT EXISTS admins (
   telefone TEXT,
   email TEXT,
   cargo TEXT NOT NULL DEFAULT 'colaborador',
+  -- Lista JSON das áreas do painel liberadas para este colaborador.
+  -- O titular ignora esta coluna: enxerga tudo por definição.
+  permissoes TEXT NOT NULL DEFAULT '[]',
   ativo INTEGER NOT NULL DEFAULT 1,
   password_hash TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),

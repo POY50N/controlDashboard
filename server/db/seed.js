@@ -5,6 +5,7 @@
 const path = require('path');
 const { createDatabase } = require('./index');
 const { hashPassword } = require('../lib/password');
+const { padraoDoCargo } = require('../lib/areas');
 
 const DEFAULT_DB_PATH = path.join(__dirname, '..', '..', 'data', 'local.sqlite');
 
@@ -20,20 +21,30 @@ async function seed(dbPath = DEFAULT_DB_PATH) {
 
   // O administrador entra por três caminhos: usuário, número da OAB ou o
   // próprio CPF. Todos levam ao mesmo painel.
+  const areas = (cargo) => JSON.stringify(padraoDoCargo(cargo));
+
   db.run(
-    `INSERT INTO admins (username, nome, oab, documento, telefone, email, cargo, password_hash) VALUES (?, ?, ?, ?, ?, ?, 'titular', ?)`,
-    ['jorge', 'Jorge Silva', 'OAB/SP 123.456', '15350946056', '(11) 4000-0000', 'jorge@jorgesilva.adv.br', hashPassword('admin123')]
+    `INSERT INTO admins (username, nome, oab, documento, telefone, email, cargo, permissoes, password_hash) VALUES (?, ?, ?, ?, ?, ?, 'titular', ?, ?)`,
+    ['jorge', 'Jorge Silva', 'OAB/SP 123.456', '15350946056', '(11) 4000-0000', 'jorge@jorgesilva.adv.br', areas('titular'), hashPassword('admin123')]
   );
 
-  // Equipe do escritório. A Beatriz já tem senha (dá para entrar e testar);
-  // o Rafael está em primeiro acesso, como fica um colaborador recém-cadastrado.
+  // Equipe do escritório, cada um com o perfil de acesso do seu quadro.
   db.run(
-    `INSERT INTO admins (username, nome, oab, documento, telefone, email, cargo, password_hash) VALUES (?, ?, ?, ?, ?, ?, 'secretaria', ?)`,
-    ['beatriz', 'Beatriz Nunes', null, '39447856005', '(11) 4000-0001', 'beatriz@jorgesilva.adv.br', hashPassword('colab123')]
+    `INSERT INTO admins (username, nome, oab, documento, telefone, email, cargo, permissoes, password_hash) VALUES (?, ?, ?, ?, ?, ?, 'socio', ?, ?)`,
+    ['helena', 'Helena Prado', 'OAB/SP 222.333', '19173864081', '(11) 4000-0003', 'helena@jorgesilva.adv.br', areas('socio'), hashPassword('socia123')]
   );
   db.run(
-    `INSERT INTO admins (username, nome, oab, documento, telefone, email, cargo, password_hash) VALUES (?, ?, ?, ?, ?, ?, 'estagiario', NULL)`,
-    ['rafael', 'Rafael Moreira', 'OAB/SP 654.321', '68169461070', '(11) 4000-0002', 'rafael@jorgesilva.adv.br']
+    `INSERT INTO admins (username, nome, oab, documento, telefone, email, cargo, permissoes, password_hash) VALUES (?, ?, ?, ?, ?, ?, 'advogado', ?, ?)`,
+    ['marcos', 'Marcos Tavares', 'OAB/SP 555.111', '04688574060', '(11) 4000-0004', 'marcos@jorgesilva.adv.br', areas('advogado'), hashPassword('adv123')]
+  );
+  db.run(
+    `INSERT INTO admins (username, nome, oab, documento, telefone, email, cargo, permissoes, password_hash) VALUES (?, ?, ?, ?, ?, ?, 'secretaria', ?, ?)`,
+    ['beatriz', 'Beatriz Nunes', null, '39447856005', '(11) 4000-0001', 'beatriz@jorgesilva.adv.br', areas('secretaria'), hashPassword('colab123')]
+  );
+  // Estagiário não recebe nada por padrão: aqui, alguém marcou duas áreas na mão.
+  db.run(
+    `INSERT INTO admins (username, nome, oab, documento, telefone, email, cargo, permissoes, password_hash) VALUES (?, ?, ?, ?, ?, ?, 'estagiario', ?, NULL)`,
+    ['rafael', 'Rafael Moreira', 'OAB/SP 654.321', '68169461070', '(11) 4000-0002', 'rafael@jorgesilva.adv.br', JSON.stringify(['clientes', 'processos'])]
   );
 
   const clients = [
@@ -85,7 +96,7 @@ async function seed(dbPath = DEFAULT_DB_PATH) {
       honorarios: [['Honorários · julho', 120000, '2026-07-28', 'atraso']]
     },
     {
-      tipo: 'PJ', nome: 'Construtora Alvorada Ltda.', documento: '11222333000181', username: 'alvorada', owner: 1,
+      tipo: 'PJ', nome: 'Construtora Alvorada Ltda.', documento: '11222333000181', username: 'alvorada', owner: 3,
       documento_secundario: 'isento', data_ref: '12/05/2010', extra: 'Carlos Menezes (sócio-administrador)',
       email: 'contato@alvordaconstrutora.com.br', telefone: '(11) 3222-4400', cep: '04543-000',
       logradouro: 'Av. Faria Lima', numero: '2100', cidade_uf: 'São Paulo / SP',
@@ -99,7 +110,7 @@ async function seed(dbPath = DEFAULT_DB_PATH) {
       honorarios: [['Honorários · agosto', 350000, '2026-08-15', 'a_vencer']]
     },
     {
-      tipo: 'PF', nome: 'Ana Paula Costa', documento: '93541134780', username: 'ana.costa', owner: 2,
+      tipo: 'PF', nome: 'Ana Paula Costa', documento: '93541134780', username: 'ana.costa', owner: 4,
       documento_secundario: '22.222.222-2 SSP/SP', data_ref: '25/09/1990', extra: 'Professora',
       email: 'ana.costa@email.com', telefone: '(11) 92222-2222', cep: '05407-000',
       logradouro: 'Rua Teodoro Sampaio', numero: '450', cidade_uf: 'São Paulo / SP',
@@ -112,7 +123,7 @@ async function seed(dbPath = DEFAULT_DB_PATH) {
       honorarios: [['Honorários · agosto', 90000, '2026-08-20', 'avisado']]
     },
     {
-      tipo: 'PF', nome: 'Carlos Menezes', documento: '12345678909', username: 'carlos.menezes', owner: 2,
+      tipo: 'PF', nome: 'Carlos Menezes', documento: '12345678909', username: 'carlos.menezes', owner: 4,
       documento_secundario: '33.333.333-3 SSP/SP', data_ref: '30/01/1975', extra: 'Empresário',
       email: 'carlos.menezes@email.com', telefone: '(11) 93333-3333', cep: '01452-000',
       logradouro: 'Av. Rebouças', numero: '3000', cidade_uf: 'São Paulo / SP',
@@ -128,7 +139,7 @@ async function seed(dbPath = DEFAULT_DB_PATH) {
       // --- Os dois cadastros abaixo compartilham DE PROPÓSITO o mesmo nome
       // de usuário ("rpereira"). Ao digitar esse usuário o sistema não sabe
       // quem é: quem identifica o cadastro é a senha. ---
-      tipo: 'PF', nome: 'Ricardo Alves Pereira', documento: '30720056077', username: 'rpereira', owner: 3,
+      tipo: 'PF', nome: 'Ricardo Alves Pereira', documento: '30720056077', username: 'rpereira', owner: 5,
       documento_secundario: '44.444.444-4 SSP/SP', data_ref: '17/06/1983', extra: 'Engenheiro',
       email: 'ricardo.pereira@email.com', telefone: '(11) 96666-1111', cep: '02011-000',
       logradouro: 'Rua Voluntários da Pátria', numero: '520', cidade_uf: 'São Paulo / SP',
@@ -141,7 +152,7 @@ async function seed(dbPath = DEFAULT_DB_PATH) {
       honorarios: [['Honorários · agosto', 110000, '2026-08-25', 'a_vencer']]
     },
     {
-      tipo: 'PF', nome: 'Renata Pereira Alves', documento: '87748248011', username: 'rpereira', owner: 3,
+      tipo: 'PF', nome: 'Renata Pereira Alves', documento: '87748248011', username: 'rpereira', owner: 5,
       documento_secundario: '55.555.555-5 SSP/SP', data_ref: '03/12/1991', extra: 'Arquiteta',
       email: 'renata.alves@email.com', telefone: '(11) 97777-2222', cep: '05416-000',
       logradouro: 'Rua Harmonia', numero: '145', cidade_uf: 'São Paulo / SP',
@@ -154,7 +165,7 @@ async function seed(dbPath = DEFAULT_DB_PATH) {
       honorarios: [['Honorários · agosto', 95000, '2026-08-18', 'a_vencer']]
     },
     {
-      tipo: 'PJ', nome: 'Padaria Estrela ME', documento: '45723174000110', username: 'padariaestrela', owner: 3,
+      tipo: 'PJ', nome: 'Padaria Estrela ME', documento: '45723174000110', username: 'padariaestrela', owner: 5,
       documento_secundario: 'isento', data_ref: '08/08/2016', extra: 'Roberto Alves (responsável)',
       email: 'contato@padariaestrela.com.br', telefone: '(11) 3444-5500', cep: '03310-000',
       logradouro: 'Rua da Mooca', numero: '1800', cidade_uf: 'São Paulo / SP',
@@ -207,7 +218,7 @@ async function seed(dbPath = DEFAULT_DB_PATH) {
 
   // Uma permissão de exemplo: a Beatriz autorizou o Rafael a ver os processos
   // dela. O contrário NÃO existe — para dar de teste os dois estados na tela.
-  db.run('INSERT INTO colaborador_permissoes (owner_id, grantee_id) VALUES (2, 3)');
+  db.run('INSERT INTO colaborador_permissoes (owner_id, grantee_id) VALUES (4, 5)');
 
   db.exec(`DELETE FROM change_log;`); // seed data is the agreed baseline, not a pending change
   db.persistNow();
@@ -221,12 +232,19 @@ async function seed(dbPath = DEFAULT_DB_PATH) {
   console.log('  · OAB ........ OAB/SP 123.456  (ou apenas 123456)');
   console.log('  · CPF ........ 153.509.460-56');
   console.log('');
-  console.log('COLABORADORES (equipe do escritório — mesmo painel):');
-  console.log('  · Beatriz Nunes (secretária) ... beatriz | 394.478.560-05 | senha "colab123"');
-  console.log('  · Rafael Moreira (estagiário) .. rafael  | 681.694.610-70 | primeiro acesso, cria a senha');
+  console.log('EQUIPE — cada quadro abre um conjunto diferente de áreas do painel:');
+  console.log('  · Helena Prado (sócia) ......... helena  | senha "socia123"');
+  console.log('      áreas: TUDO, inclusive contas do escritório e equipe');
+  console.log('  · Marcos Tavares (advogado) .... marcos  | senha "adv123"');
+  console.log('      áreas: visão, clientes, processos, financeiro, exportar (SEM contas do escritório)');
+  console.log('  · Beatriz Nunes (secretária) ... beatriz | senha "colab123"');
+  console.log('      áreas: visão, clientes, processos, financeiro');
+  console.log('  · Rafael Moreira (estagiário) .. rafael  | primeiro acesso, cria a senha');
+  console.log('      áreas: apenas clientes e processos (marcadas manualmente)');
   console.log('');
-  console.log('CARTEIRA DE CADA UM (quem enxerga o quê):');
+  console.log('CARTEIRA DE CLIENTES (quem é responsável por quem):');
   console.log('  · Jorge (titular) . vê TUDO, sem precisar de autorização');
+  console.log('  · Marcos .......... Construtora Alvorada');
   console.log('  · Beatriz ......... Ana Paula Costa, Carlos Menezes');
   console.log('  · Rafael .......... Ricardo, Renata, Padaria Estrela');
   console.log('  → Beatriz autorizou Rafael: ele também vê os clientes dela.');

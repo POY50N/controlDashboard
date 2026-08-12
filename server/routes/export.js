@@ -2,6 +2,7 @@ const express = require('express');
 const XLSX = require('xlsx');
 const { requireRole } = require('../lib/session');
 const { visibleOwners, ownerScope } = require('../lib/access');
+const { requireArea } = require('../lib/areas');
 
 const COLUMNS = [
   { key: 'nome', label: 'Nome' },
@@ -30,6 +31,7 @@ function toCsv(rows) {
 module.exports = function exportRoutes(db) {
   const router = express.Router();
   router.use(requireRole(db, 'admin'));
+  router.use(requireArea(db, 'exportar'));
 
   router.get('/clients', (req, res) => {
     const format = (req.query.format || 'csv').toLowerCase();

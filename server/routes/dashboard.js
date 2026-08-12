@@ -1,10 +1,12 @@
 const express = require('express');
 const { requireRole } = require('../lib/session');
 const { visibleOwners, ownerScope, isTitular } = require('../lib/access');
+const { requireArea } = require('../lib/areas');
 
 module.exports = function dashboardRoutes(db) {
   const router = express.Router();
   router.use(requireRole(db, 'admin'));
+  router.use(requireArea(db, 'visao'));
 
   // Todos os números refletem apenas o que o colaborador logado pode ver:
   // os próprios clientes e os de quem o autorizou. O titular vê tudo.

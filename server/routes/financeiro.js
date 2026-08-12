@@ -2,12 +2,13 @@ const express = require('express');
 const { requireRole } = require('../lib/session');
 const { nowIso } = require('../lib/time');
 const { visibleOwners, ownerScope, canSeeClient, SEM_PERMISSAO } = require('../lib/access');
+const { requireArea } = require('../lib/areas');
 
 module.exports = function financeiroRoutes(db) {
   const router = express.Router();
   router.use(requireRole(db, 'admin'));
 
-  router.get('/honorarios', (req, res) => {
+  router.get('/honorarios', requireArea(db, 'financeiro'), (req, res) => {
     const scope = ownerScope(visibleOwners(db, req.session.subject_id), 'c.owner_id');
     const rows = db.all(`
       SELECT h.*, c.nome AS cliente_nome
@@ -25,7 +26,7 @@ module.exports = function financeiroRoutes(db) {
     res.json({ honorarios: rows, totals });
   });
 
-  router.post('/honorarios', (req, res) => {
+  router.post('/honorarios', requireArea(db, 'financeiro'), (req, res) => {
     const { clientId, referencia, valor, vencimento } = req.body;
     if (!clientId || !valor || !vencimento) return res.status(400).json({ error: 'Cliente, valor e vencimento são obrigatórios.' });
     if (!canSeeClient(db, req.session.subject_id, clientId)) return res.status(403).json({ error: SEM_PERMISSAO });
@@ -38,7 +39,7 @@ module.exports = function financeiroRoutes(db) {
     res.status(201).json({ id });
   });
 
-  router.put('/honorarios/:id', (req, res) => {
+  router.put('/honorarios/:id', requireArea(db, 'financeiro'), (req, res) => {
     const h = db.get('SELECT * FROM honorarios WHERE id = ?', [req.params.id]);
     if (!h) return res.status(404).json({ error: 'Cobrança não encontrada.' });
     if (!canSeeClient(db, req.session.subject_id, h.client_id)) return res.status(403).json({ error: SEM_PERMISSAO });
@@ -49,7 +50,7 @@ module.exports = function financeiroRoutes(db) {
     res.json({ ok: true });
   });
 
-  router.get('/contas', (req, res) => {
+  router.get('/contas', requireArea(db, 'escritorio'), (req, res) => {
     const rows = db.all('SELECT * FROM contas_escritorio ORDER BY vencimento ASC');
     const totals = db.get(`
       SELECT
@@ -61,7 +62,7 @@ module.exports = function financeiroRoutes(db) {
     res.json({ contas: rows, totals });
   });
 
-  router.post('/contas', (req, res) => {
+  router.post('/contas', requireArea(db, 'escritorio'), (req, res) => {
     const { nome, categoria, valor, vencimento } = req.body;
     if (!nome || !valor) return res.status(400).json({ error: 'Nome e valor são obrigatórios.' });
     const ts = nowIso();
@@ -73,7 +74,7 @@ module.exports = function financeiroRoutes(db) {
     res.status(201).json({ id });
   });
 
-  router.put('/contas/:id', (req, res) => {
+  router.put('/contas/:id', requireArea(db, 'escritorio'), (req, res) => {
     const c = db.get('SELECT * FROM contas_escritorio WHERE id = ?', [req.params.id]);
     if (!c) return res.status(404).json({ error: 'Conta não encontrada.' });
     const { status } = req.body;

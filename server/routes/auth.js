@@ -2,6 +2,7 @@ const express = require('express');
 const { hashPassword, verifyPassword } = require('../lib/password');
 const { createSession, readSession, setSessionCookie, clearSessionCookie, destroySession, requireRole } = require('../lib/session');
 const { nowIso } = require('../lib/time');
+const { areasDoAdmin } = require('../lib/areas');
 
 function onlyDigits(v) {
   return (v || '').replace(/\D/g, '');
@@ -155,7 +156,8 @@ module.exports = function authRoutes(db, { adminOnly = false } = {}) {
       return res.json({
         role: 'admin', id: session.subject_id,
         nome: row ? row.nome : null, oab: row ? row.oab : null,
-        cargo: row ? row.cargo : null, titular: !!row && row.cargo === 'titular'
+        cargo: row ? row.cargo : null, titular: !!row && row.cargo === 'titular',
+        areas: areasDoAdmin(db, session.subject_id)
       });
     }
     const row = db.get('SELECT id, nome FROM clients WHERE id = ?', [session.subject_id]);

@@ -186,6 +186,21 @@ function createSyncClient({ db, serverUrl, syncKey, onStateChange }) {
     return getState();
   }
 
+  // "Quero os dados do servidor": abre mão de tudo o que foi alterado nesta
+  // máquina e deixa a próxima descida sobrescrever os registros.
+  async function discardLocal() {
+    const pendentes = getPendingChanges();
+    pendentes.forEach((c) => {
+      db.run('UPDATE change_log SET synced = 1 WHERE id = ?', [c.changeId]);
+      clearDirty(db, c.table, c.rowId);
+    });
+    state.conflicts = [];
+    // Zera o cursor para reler o servidor inteiro e restaurar os registros.
+    setCursor(0);
+    emit();
+    return sync();
+  }
+
   // Conflict resolution -------------------------------------------------
   // "keep_local": force our version onto the server.
   // "keep_server": discard our local edit and take the server's row.
@@ -209,7 +224,7 @@ function createSyncClient({ db, serverUrl, syncKey, onStateChange }) {
   }
 
   return {
-    getState, getPendingChanges, checkConnection, sync, resolveConflict,
+    getState, getPendingChanges, checkConnection, sync, resolveConflict, discardLocal,
     get conflicts() { return state.conflicts; }
   };
 }

@@ -2,10 +2,12 @@ const express = require('express');
 const { requireRole } = require('../lib/session');
 const { nowIso } = require('../lib/time');
 const { visibleOwners, ownerScope, canSeeProcesso, canSeeOwner, SEM_PERMISSAO } = require('../lib/access');
+const { requireArea } = require('../lib/areas');
 
 module.exports = function processosRoutes(db) {
   const router = express.Router();
   router.use(requireRole(db, 'admin'));
+  router.use(requireArea(db, 'processos'));
 
   router.get('/', (req, res) => {
     const eu = req.session.subject_id;

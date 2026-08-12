@@ -90,11 +90,20 @@ app.whenReady().then(async () => {
 
   createWindow(port);
 
-  // First connectivity probe once the window has had a moment to load, then
-  // on a steady interval. Going from offline -> online is what triggers the
-  // "you have unsynced changes" notification in the renderer.
-  setTimeout(() => syncClient.checkConnection(), 1500);
-  setInterval(() => syncClient.checkConnection(), config.syncIntervalMs || 60000);
+  // O app procura a conexão sozinho, sem o usuário pedir. Enquanto está
+  // offline tenta com mais frequência, para perceber a volta da internet
+  // rapidamente; conectado, espaça as verificações.
+  const INTERVALO_ONLINE = config.syncIntervalMs || 60000;
+  const INTERVALO_OFFLINE = 10000;
+
+  setTimeout(() => syncClient.checkConnection(), 1200);
+  (function vigiarConexao() {
+    const estava = syncClient.getState().online;
+    setTimeout(async () => {
+      await syncClient.checkConnection();
+      vigiarConexao();
+    }, estava ? INTERVALO_ONLINE : INTERVALO_OFFLINE);
+  })();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow(port);
@@ -137,4 +146,5 @@ ipcMain.handle('sync:getPending', () => syncClient.getPendingChanges());
 ipcMain.handle('sync:run', (_e, opts) => syncClient.sync(opts || {}));
 ipcMain.handle('sync:check', () => syncClient.checkConnection());
 ipcMain.handle('sync:resolve', (_e, { table, rowId, choice }) => syncClient.resolveConflict(table, rowId, choice));
+ipcMain.handle('sync:discardLocal', () => syncClient.discardLocal());
 ipcMain.handle('app:isDesktop', () => true);
