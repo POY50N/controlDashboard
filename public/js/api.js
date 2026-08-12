@@ -38,6 +38,12 @@ function toast(message, kind) {
   setTimeout(() => item.remove(), 4200);
 }
 
+// No aplicativo desktop não existe site institucional: ao sair, volta-se
+// para a tela de acesso. Na web, volta-se para a página inicial.
+function paginaAposSair() {
+  return window.desktop ? 'acesso.html' : 'index.html';
+}
+
 function centavosToBRL(centavos) {
   return (centavos / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }

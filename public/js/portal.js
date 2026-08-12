@@ -131,7 +131,7 @@
 
   el('menuSair').addEventListener('click', async () => {
     await Api.post('/api/auth/logout');
-    window.location.href = 'index.html';
+    window.location.href = paginaAposSair();
   });
 
   boot();

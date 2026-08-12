@@ -38,6 +38,14 @@ module.exports = function colaboradoresRoutes(db) {
   const router = express.Router();
   router.use(requireRole(db, 'admin'));
 
+  // Ninguém entrega mais poder do que tem. O titular é a única exceção.
+  function limitarAoQueTenho(adminId, desejadas) {
+    const pedidas = sanitizar(desejadas);
+    if (isTitular(db, adminId)) return pedidas;
+    const minhas = areasDoAdmin(db, adminId);
+    return pedidas.filter((a) => minhas.includes(a));
+  }
+
   // Catálogo de quadros e áreas + o que vem pré-marcado em cada quadro.
   // A tela de cadastro monta os campos a partir daqui.
   router.get('/opcoes', (req, res) => {
@@ -60,8 +68,10 @@ module.exports = function colaboradoresRoutes(db) {
     const username = normalizeUser(b.username);
     const cargo = CARGO_KEYS.includes(b.cargo) ? b.cargo : 'outro';
     // Se a tela mandou a lista de áreas, ela manda; senão cai no padrão do
-    // quadro escolhido.
-    const areas = Array.isArray(b.areas) ? sanitizar(b.areas) : padraoDoCargo(cargo);
+    // quadro escolhido. Quem não é titular não pode conceder área que ele
+    // próprio não tem - senão bastaria criar um colaborador com tudo e
+    // entrar como ele.
+    const areas = limitarAoQueTenho(req.session.subject_id, Array.isArray(b.areas) ? b.areas : padraoDoCargo(cargo));
 
     if (!nome) return res.status(400).json({ error: 'Informe o nome do colaborador.' });
     if (username.length < 3) return res.status(400).json({ error: 'O usuário precisa ter ao menos 3 caracteres.' });
@@ -90,8 +100,12 @@ module.exports = function colaboradoresRoutes(db) {
     const alvo = db.get('SELECT * FROM admins WHERE id = ? AND ativo = 1', [req.params.id]);
     if (!alvo) return res.status(404).json({ error: 'Colaborador não encontrado.' });
     if (alvo.cargo === 'titular') return res.status(403).json({ error: 'O titular tem acesso a tudo e não pode ser restringido.' });
+    // Barra a escalada mais óbvia: ampliar as próprias permissões.
+    if (alvo.id === req.session.subject_id) {
+      return res.status(403).json({ error: 'Você não pode alterar as suas próprias áreas. Peça ao titular do escritório.' });
+    }
 
-    const areas = sanitizar(req.body.areas);
+    const areas = limitarAoQueTenho(req.session.subject_id, req.body.areas);
     db.run('UPDATE admins SET permissoes = ?, updated_at = ?, dirty = 1 WHERE id = ?', [JSON.stringify(areas), nowIso(), alvo.id]);
     db.recordChange('admins', alvo.id, 'update', `Áreas de "${alvo.nome}" atualizadas (${areas.length} liberada(s)).`, { areas });
     res.json({ ok: true, areas });
@@ -184,7 +198,11 @@ module.exports = function colaboradoresRoutes(db) {
     if (alvo.cargo === 'titular') return res.status(403).json({ error: 'O titular do escritório não pode ser removido.' });
     if (Number(req.params.id) === req.session.subject_id) return res.status(403).json({ error: 'Você não pode remover o seu próprio acesso.' });
 
-    db.run('UPDATE admins SET ativo = 0, updated_at = ?, dirty = 1 WHERE id = ?', [nowIso(), alvo.id]);
+    // O cadastro é desativado, não apagado (preserva o histórico). O usuário,
+    // porém, é liberado: senão o nome ficaria reservado para sempre e não
+    // daria para recadastrar a mesma pessoa.
+    const liberado = `${alvo.username}__removido_${alvo.id}`;
+    db.run('UPDATE admins SET ativo = 0, username = ?, updated_at = ?, dirty = 1 WHERE id = ?', [liberado, nowIso(), alvo.id]);
     // Some junto qualquer permissão que ele tenha dado ou recebido.
     db.run('DELETE FROM colaborador_permissoes WHERE owner_id = ? OR grantee_id = ?', [alvo.id, alvo.id]);
     db.recordChange('admins', alvo.id, 'update', `Acesso do colaborador "${alvo.nome}" removido.`, {});

@@ -88,7 +88,7 @@
 
   async function logout() {
     await Api.post('/api/auth/logout');
-    window.location.href = 'index.html';
+    window.location.href = paginaAposSair();
   }
   el('logoutBtn').addEventListener('click', logout);
   el('menuSair').addEventListener('click', logout);
