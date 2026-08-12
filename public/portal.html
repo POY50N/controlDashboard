@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portal do Cliente · Jorge Silva Advocacia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/base.css">
+<style>
+  .shell{min-height:100vh;display:flex;flex-direction:column;background:var(--bg)}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 44px;background:var(--dark);border-bottom:1px solid rgba(176,141,74,.3)}
+  .body{display:flex;flex:1;align-items:stretch}
+  .nav{width:224px;flex:none;display:flex;flex-direction:column;gap:2px;padding:26px 16px;background:var(--bg-alt);border-right:1px solid var(--border-soft)}
+  main{flex:1;padding:38px 48px;display:flex;flex-direction:column;gap:26px}
+  .section{display:none;flex-direction:column;gap:26px;animation:enterUp .35s cubic-bezier(.2,.8,.3,1) both}
+  .section.active{display:flex}
+  .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .stat-card{display:flex;flex-direction:column;gap:9px;padding:24px;background:var(--panel);border:1px solid var(--border)}
+  .stat-card .n{font:300 34px var(--font-serif);color:var(--ink)}
+  .stat-card.danger{background:var(--danger-bg);border-color:var(--danger-border)}
+  .stat-card.danger .label,.stat-card.danger .n{color:var(--danger-ink)}
+  .lanc-table{grid-template-columns:1.6fr 1fr .8fr .8fr}
+  .andamento-item{display:grid;grid-template-columns:96px 1fr;gap:20px;padding:20px 24px;border-bottom:1px solid #eee7d9}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">JS</span><span class="brand-sep"></span>
+      <span style="display:flex;flex-direction:column;gap:2px"><span class="brand-name">Jorge Silva</span><span class="brand-sub">ADVOCACIA</span></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:22px">
+      <span style="font:700 8.5px var(--font-mono);letter-spacing:.22em;color:#77736a">PORTAL DO CLIENTE</span>
+      <span style="width:1px;height:22px;background:rgba(176,141,74,.3)"></span>
+      <div class="user-menu-wrap" style="width:auto">
+        <button class="user-trigger" id="userTrigger" style="width:auto" title="Opções da conta">
+          <span id="avatarInicial" style="width:32px;height:32px;flex:none;border-radius:50%;background:linear-gradient(135deg,#3a3d44,#26292e);border:1px solid rgba(176,141,74,.4);display:flex;align-items:center;justify-content:center;font:500 13px var(--font-serif);color:#e6cd83">—</span>
+          <span id="clienteNome" style="font:300 14px var(--font-serif);color:#d6d2c9">…</span>
+          <span class="user-caret" style="color:#77736a;margin-left:6px">▼</span>
+        </button>
+        <div id="userMenu" class="user-menu down hidden">
+          <span class="menu-hint">APLICATIVO</span>
+          <a href="download.html">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"></path><path d="M7 11l5 5 5-5"></path><path d="M4 20h16"></path></svg>
+            Baixar aplicativo
+          </a>
+          <button id="menuSair">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 17l5-5-5-5"></path><path d="M20 12H9"></path><path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5"></path></svg>
+            Sair da conta
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="body">
+    <nav class="nav">
+      <span style="font:700 9px var(--font-mono);letter-spacing:.24em;color:var(--muted);padding:0 12px 10px">NAVEGAÇÃO</span>
+      <button class="sidebar-btn-light active" data-nav="inicio">Início</button>
+      <button class="sidebar-btn-light" data-nav="processos">Meus processos</button>
+      <button class="sidebar-btn-light" data-nav="pagamentos">Pagamentos</button>
+      <button class="sidebar-btn-light" data-nav="perfil">Meus dados</button>
+      <div style="margin-top:auto;display:flex;flex-direction:column;gap:9px;padding:16px 12px;border-top:1px solid var(--border-soft)">
+        <span style="font:700 9px var(--font-mono);letter-spacing:.22em;color:var(--muted)">PRECISA DE AJUDA?</span>
+        <span style="font:300 13.5px/1.6 var(--font-serif);color:var(--ink-soft)">Fale com o escritório pelo (11) 4000-0000.</span>
+      </div>
+    </nav>
+
+    <main>
+      <section id="sec-inicio" class="section active">
+        <div style="display:flex;flex-direction:column;gap:7px"><span class="eyebrow">INÍCIO</span><h1 id="saudacao" style="margin:0;font:300 36px var(--font-serif);color:var(--ink)">Bem-vindo(a).</h1></div>
+        <div class="stat-grid">
+          <div class="stat-card"><span class="label">PROCESSOS ATIVOS</span><span id="pProcessosAtivos" class="n">—</span></div>
+          <div class="stat-card"><span class="label">PRÓXIMO COMPROMISSO</span><span id="pProximo" class="n">—</span></div>
+          <div class="stat-card danger"><span class="label">EM ATRASO</span><span id="pAtraso" class="n">—</span></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <span class="label">MEUS PROCESSOS</span>
+          <div id="resumoProcessos" style="display:flex;flex-direction:column;gap:14px"></div>
+        </div>
+      </section>
+
+      <section id="sec-processos" class="section">
+        <div style="display:flex;flex-direction:column;gap:7px"><span class="eyebrow">PROCESSOS</span><h1 style="margin:0;font:300 36px var(--font-serif);color:var(--ink)">Meus processos</h1></div>
+        <div id="listaProcessosDetalhe" style="display:flex;flex-direction:column;gap:26px"></div>
+      </section>
+
+      <section id="sec-pagamentos" class="section">
+        <div style="display:flex;flex-direction:column;gap:7px"><span class="eyebrow">PAGAMENTOS</span><h1 style="margin:0;font:300 36px var(--font-serif);color:var(--ink)">Honorários</h1></div>
+        <div id="alertaAtraso"></div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <span class="label">LANÇAMENTOS</span>
+          <div class="card">
+            <div class="table-head lanc-table"><span class="label">DESCRIÇÃO</span><span class="label">VENCIMENTO</span><span class="label">VALOR</span><span class="label">SITUAÇÃO</span></div>
+            <div id="listaLancamentos"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="sec-perfil" class="section">
+        <div style="display:flex;flex-direction:column;gap:7px"><span class="eyebrow">PERFIL</span><h1 style="margin:0;font:300 36px var(--font-serif);color:var(--ink)">Meus dados</h1></div>
+        <div id="dadosPerfil" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:720px"></div>
+        <form id="senhaForm" class="card" style="display:flex;flex-direction:column;gap:14px;padding:24px;max-width:720px">
+          <span style="font:400 19px var(--font-serif);color:var(--ink)">Alterar minha senha</span>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div class="field"><label class="label">SENHA ATUAL</label><input id="senhaAtual" type="password" required></div>
+            <div class="field"><label class="label">NOVA SENHA</label><input id="senhaNova" type="password" required placeholder="mínimo de 8 caracteres"></div>
+          </div>
+          <button type="submit" class="btn btn-ghost" style="align-self:flex-start">Alterar senha</button>
+        </form>
+      </section>
+    </main>
+  </div>
+</div>
+<script src="js/api.js"></script>
+<script src="js/sync-ui.js"></script>
+<script src="js/user-menu.js"></script>
+<script src="js/portal.js"></script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+node_modules/
+data/*.sqlite
+data/*.sqlite-journal
+dist/
+*.log
+.DS_Store
+Thumbs.db

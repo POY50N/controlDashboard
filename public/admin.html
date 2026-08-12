@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel do Advogado · Jorge Silva Advocacia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/base.css">
+<style>
+  .shell{min-height:100vh;display:flex;background:var(--bg)}
+  .aside{width:250px;flex:none;display:flex;flex-direction:column;background:var(--dark);border-right:1px solid rgba(176,141,74,.28)}
+  .aside-head{display:flex;align-items:center;gap:12px;padding:22px;border-bottom:1px solid rgba(176,141,74,.22)}
+  .aside-nav{display:flex;flex-direction:column;gap:2px;padding:20px 12px}
+  .aside-foot{margin-top:auto;display:flex;align-items:center;gap:11px;padding:20px 22px;border-top:1px solid rgba(176,141,74,.22)}
+  .content{flex:1;display:flex;flex-direction:column;min-width:0}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:16px 40px;background:#fbf9f4;border-bottom:1px solid var(--border)}
+  main{flex:1;padding:34px 40px;display:flex;flex-direction:column;gap:24px;overflow:auto}
+  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+  .stat-card{display:flex;flex-direction:column;gap:9px;padding:22px;background:var(--panel);border:1px solid var(--border)}
+  .stat-card .n{font:300 32px var(--font-serif);color:var(--ink)}
+  .stat-card.danger{background:var(--danger-bg);border-color:var(--danger-border)}
+  .stat-card.danger .label, .stat-card.danger .n{color:var(--danger-ink)}
+  .section{display:none;flex-direction:column;gap:22px;animation:enterUp .35s cubic-bezier(.2,.8,.3,1) both}
+  .section.active{display:flex}
+  .clients-table{grid-template-columns:1.5fr 1.1fr .7fr .9fr .8fr .6fr}
+  .procs-table{grid-template-columns:1.6fr 1fr 1fr .9fr}
+  .fin-table{grid-template-columns:1.4fr 1.2fr .9fr .8fr .9fr}
+  .segmented{display:flex;gap:10px}
+  .seg-btn{flex:1;font:500 13.5px var(--font-serif);color:var(--ink-soft);background:var(--panel);border:1px solid var(--border-soft);padding:12px 10px;border-radius:2px;cursor:pointer;white-space:nowrap}
+  .seg-btn.active{color:var(--dark);background:var(--gold-grad);border-color:transparent}
+  .export-menu{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-top:2px;padding-top:10px;animation:enterUp .25s both}
+  .andamento-item{display:grid;grid-template-columns:96px 1fr;gap:20px;padding:19px 24px;border-bottom:1px solid #eee7d9}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <aside class="aside">
+    <div class="aside-head">
+      <span class="brand-mark">JS</span><span class="brand-sep"></span>
+      <span style="display:flex;flex-direction:column;gap:2px"><span class="brand-name">Jorge Silva</span><span class="brand-sub">ADVOCACIA</span></span>
+    </div>
+    <nav class="aside-nav">
+      <span style="font:700 8.5px var(--font-mono);letter-spacing:.24em;color:#6b675e;padding:0 12px 10px">PAINEL DO ADVOGADO</span>
+      <button class="sidebar-btn" data-nav="visao">Visão geral</button>
+      <button class="sidebar-btn" data-nav="clientes">Clientes</button>
+      <button class="sidebar-btn" data-nav="processos">Processos</button>
+      <button class="sidebar-btn" data-nav="financeiro">Financeiro</button>
+      <button class="sidebar-btn" data-nav="escritorio">Escritório</button>
+    </nav>
+    <div class="aside-foot">
+      <div class="user-menu-wrap">
+        <button class="user-trigger" id="userTrigger" title="Opções da conta">
+          <span id="adminInicial" style="width:32px;height:32px;flex:none;border-radius:50%;background:linear-gradient(135deg,#3a3d44,#26292e);border:1px solid rgba(176,141,74,.4);display:flex;align-items:center;justify-content:center;font:500 13px var(--font-serif);color:#e6cd83">—</span>
+          <span style="display:flex;flex-direction:column;gap:2px"><span id="adminNome" style="font:300 13.5px var(--font-serif);color:#d6d2c9">Jorge Silva</span><span id="adminOab" style="font:700 7.5px var(--font-mono);letter-spacing:.18em;color:#6b675e">—</span></span>
+          <span class="user-caret" style="color:#6b675e">▼</span>
+        </button>
+        <div id="userMenu" class="user-menu up hidden">
+          <span class="menu-hint">ESCRITÓRIO</span>
+          <button id="menuPermissoes">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10.5" width="16" height="10" rx="2"></rect><path d="M8 10.5V7a4 4 0 0 1 8 0"></path></svg>
+            Quem vê meus processos
+          </button>
+          <button id="menuColaborador">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 20v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 3 18.5V20"></path><circle cx="9" cy="8" r="3.2"></circle><path d="M18 8.5v5M20.5 11h-5"></path></svg>
+            Cadastrar colaborador
+          </button>
+          <span class="menu-hint" style="padding-top:8px">APLICATIVO</span>
+          <a href="download.html">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"></path><path d="M7 11l5 5 5-5"></path><path d="M4 20h16"></path></svg>
+            Baixar aplicativo
+          </a>
+          <button id="menuSair">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 17l5-5-5-5"></path><path d="M20 12H9"></path><path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5"></path></svg>
+            Sair da conta
+          </button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="content">
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:14px;flex:1;max-width:420px">
+        <input id="buscaInput" type="text" placeholder="Buscar cliente por nome ou documento" style="flex:1;min-width:0;height:42px;padding:0 15px;border:1px solid var(--border-soft);background:var(--bg);font:300 14.5px var(--font-serif);color:var(--ink);outline:none;border-radius:2px">
+      </div>
+      <div style="display:flex;align-items:center;gap:18px">
+        <button id="logoutBtn" class="btn-text">Sair</button>
+        <button class="btn btn-primary" data-nav="novo">+ Novo cliente</button>
+      </div>
+    </header>
+
+    <main>
+
+      <!-- VISÃO GERAL -->
+      <section id="sec-visao" class="section active">
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:24px">
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <span class="eyebrow">VISÃO GERAL</span>
+            <h1 id="dataHoje" style="margin:0;font:300 34px var(--font-serif);color:var(--ink)"></h1>
+          </div>
+        </div>
+        <div class="stat-grid">
+          <div class="stat-card card-accent"><span class="label">CLIENTES ATIVOS</span><span id="statClientes" class="n">—</span></div>
+          <div class="stat-card"><span class="label">PROCESSOS EM ANDAMENTO</span><span id="statProcessos" class="n">—</span></div>
+          <div class="stat-card"><span class="label">A RECEBER NO MÊS</span><span id="statAReceber" class="n">—</span></div>
+          <div class="stat-card danger"><span class="label">EM ATRASO</span><span id="statAtraso" class="n">—</span></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1.35fr .65fr;gap:22px;align-items:start">
+          <div style="display:flex;flex-direction:column;gap:13px">
+            <span class="label">MOVIMENTAÇÕES RECENTES</span>
+            <div id="listaMovimentacoes" class="card"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:22px">
+            <div style="display:flex;flex-direction:column;gap:13px">
+              <span class="label">PENDÊNCIAS FINANCEIRAS</span>
+              <div id="listaPendencias" class="card"></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:13px">
+              <span class="label">AGENDA</span>
+              <div id="listaAgenda" class="card"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CLIENTES -->
+      <section id="sec-clientes" class="section">
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:24px">
+          <div style="display:flex;flex-direction:column;gap:7px"><span class="eyebrow">CLIENTES</span><h1 id="tituloClientes" style="margin:0;font:300 34px var(--font-serif);color:var(--ink)">Clientes cadastrados</h1></div>
+          <button class="btn btn-primary" data-nav="novo">+ Novo cliente</button>
+        </div>
+        <div class="card">
+          <div class="table-head clients-table"><span class="label">CLIENTE</span><span class="label">CPF/CNPJ</span><span class="label">PROCESSOS</span><span class="label">FINANCEIRO</span><span class="label">ÚLTIMO CONTATO</span><span class="label">AÇÕES</span></div>
+          <div id="listaClientes"></div>
+        </div>
+        <div>
+          <button id="exportToggle" class="btn-text">Exportar clientes ▾</button>
+          <div id="exportMenu" class="export-menu hidden">
+            <span style="font:300 13px var(--font-serif);color:var(--muted)">Baixar como:</span>
+            <a class="btn-text" href="/api/export/clients?format=csv">CSV (.csv)</a>
+            <a class="btn-text" href="/api/export/clients?format=xlsx">Excel (.xlsx)</a>
+            <a class="btn-text" href="/api/export/clients?format=json">JSON (.json)</a>
+            <a class="btn-text" href="/api/export/clients?format=sqlite">Banco de dados SQLite (.db)</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- NOVO CLIENTE -->
+      <section id="sec-novo" class="section">
+        <div style="display:flex;flex-direction:column;gap:24px;max-width:960px">
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <button class="btn-text" data-nav="clientes" style="align-self:flex-start">← Clientes</button>
+            <span class="eyebrow">NOVO CADASTRO</span>
+            <h1 style="margin:0;font:300 34px var(--font-serif);color:var(--ink)">Adicionar cliente</h1>
+            <span style="font:300 14.5px/1.7 var(--font-serif);color:var(--muted);max-width:620px">O cliente acessa o portal com o próprio documento e a senha que ele mesmo cria no primeiro acesso.</span>
+          </div>
+
+          <div class="segmented">
+            <button type="button" id="btnPF" class="seg-btn active">Pessoa física</button>
+            <button type="button" id="btnPJ" class="seg-btn">Pessoa jurídica</button>
+          </div>
+
+          <form id="novoClienteForm" style="display:flex;flex-direction:column;gap:18px">
+            <section class="card card-accent" style="display:flex;flex-direction:column;gap:18px;padding:28px">
+              <div style="display:flex;align-items:baseline;gap:12px"><span style="font:700 9px var(--font-mono);letter-spacing:.24em;color:var(--gold-2)">01</span><span style="font:400 20px var(--font-serif)">Identificação</span></div>
+              <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:18px">
+                <div class="field"><label id="labelNome" class="label">NOME COMPLETO</label><input id="inputNome" required></div>
+                <div class="field"><label id="labelDoc" class="label">CPF</label><input id="inputDoc" required placeholder="000.000.000-00"></div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px">
+                <div class="field"><label id="labelSec" class="label">RG / ÓRGÃO EMISSOR</label><input id="inputSec"></div>
+                <div class="field"><label class="label">DATA</label><input id="inputData" placeholder="00/00/0000"></div>
+                <div class="field"><label id="labelExtra" class="label">PROFISSÃO</label><input id="inputExtra"></div>
+              </div>
+            </section>
+
+            <section class="card" style="display:flex;flex-direction:column;gap:18px;padding:28px">
+              <div style="display:flex;align-items:baseline;gap:12px"><span style="font:700 9px var(--font-mono);letter-spacing:.24em;color:var(--gold-2)">02</span><span style="font:400 20px var(--font-serif)">Contato e endereço</span></div>
+              <div style="display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:18px">
+                <div class="field"><label class="label">E-MAIL</label><input id="inputEmail" type="email" placeholder="nome@email.com"></div>
+                <div class="field"><label class="label">TELEFONE</label><input id="inputTelefone" placeholder="(00) 00000-0000"></div>
+                <div class="field"><label class="label">CEP</label><input id="inputCep" placeholder="00000-000"></div>
+              </div>
+              <div style="display:grid;grid-template-columns:2fr .6fr 1.2fr;gap:18px">
+                <div class="field"><label class="label">LOGRADOURO</label><input id="inputLogradouro" placeholder="Rua, avenida…"></div>
+                <div class="field"><label class="label">Nº</label><input id="inputNumero" placeholder="000"></div>
+                <div class="field"><label class="label">CIDADE / UF</label><input id="inputCidadeUf" placeholder="São Paulo / SP"></div>
+              </div>
+            </section>
+
+            <section class="card" style="display:flex;flex-direction:column;gap:18px;padding:28px">
+              <div style="display:flex;align-items:baseline;gap:12px"><span style="font:700 9px var(--font-mono);letter-spacing:.24em;color:var(--gold-2)">03</span><span style="font:400 20px var(--font-serif)">Processo inicial</span><span style="font:300 13.5px var(--font-serif);color:var(--muted)">opcional</span></div>
+              <div style="display:grid;grid-template-columns:1.2fr 1.4fr;gap:18px">
+                <div class="field"><label class="label">ÁREA</label><input id="inputProcArea" placeholder="Civil · Trabalhista · Empresarial"></div>
+                <div class="field"><label class="label">Nº DO PROCESSO</label><input id="inputProcNumero" placeholder="0000000-00.0000.0.00.0000"></div>
+              </div>
+            </section>
+
+            <section class="card" style="display:flex;flex-direction:column;gap:18px;padding:28px">
+              <div style="display:flex;align-items:baseline;gap:12px"><span style="font:700 9px var(--font-mono);letter-spacing:.24em;color:var(--gold-2)">04</span><span style="font:400 20px var(--font-serif)">Honorários</span><span style="font:300 13.5px var(--font-serif);color:var(--muted)">opcional</span></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+                <div class="field"><label class="label">VALOR MENSAL (R$)</label><input id="inputHonorarioValor" type="number" step="0.01" placeholder="0,00"></div>
+                <div class="field"><label class="label">PRIMEIRA PARCELA</label><input id="inputHonorarioData" type="date"></div>
+              </div>
+            </section>
+
+            <div style="display:flex;justify-content:flex-end;align-items:center;gap:14px;padding-bottom:12px">
+              <button type="button" class="btn btn-outline" data-nav="clientes">Cancelar</button>
+              <button type="submit" class="btn btn-primary">Cadastrar cliente</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- PROCESSOS -->
+      <section id="sec-processos" class="section">
+        <div id="processosLista" style="display:flex;flex-direction:column;gap:22px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:24px">
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <span class="eyebrow">PROCESSOS</span>
+              <h1 id="tituloProcessos" style="margin:0;font:300 34px var(--font-serif);color:var(--ink)">Meus processos</h1>
+              <span id="subProcessos" style="font:300 14px var(--font-serif);color:var(--muted)"></span>
+            </div>
+            <button id="btnOutrosColabs" class="btn btn-ghost">Processos de outros colaboradores</button>
+          </div>
+          <div class="card">
+            <div class="table-head procs-table"><span class="label">PROCESSO</span><span class="label">CLIENTE</span><span class="label">NÚMERO</span><span class="label">STATUS</span></div>
+            <div id="listaProcessos"></div>
+          </div>
+        </div>
+        <div id="processoDetalhe" class="hidden" style="display:flex;flex-direction:column;gap:22px"></div>
+      </section>
+
+      <!-- FINANCEIRO -->
+      <section id="sec-financeiro" class="section">
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:24px">
+          <div style="display:flex;flex-direction:column;gap:7px"><span class="eyebrow">FINANCEIRO</span><h1 style="margin:0;font:300 34px var(--font-serif);color:var(--ink)">Honorários dos clientes</h1></div>
+          <button id="novaCobrancaBtn" class="btn btn-primary">+ Lançar cobrança</button>
+        </div>
+        <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
+          <div class="stat-card card-accent"><span class="label">RECEBIDO NO MÊS</span><span id="finRecebido" class="n">—</span></div>
+          <div class="stat-card"><span class="label">A RECEBER</span><span id="finAReceber" class="n">—</span></div>
+          <div class="stat-card danger"><span class="label">VENCIDO</span><span id="finVencido" class="n">—</span></div>
+        </div>
+        <div class="card">
+          <div class="table-head fin-table"><span class="label">CLIENTE</span><span class="label">REFERÊNCIA</span><span class="label">VENCIMENTO</span><span class="label">VALOR</span><span class="label">SITUAÇÃO</span></div>
+          <div id="listaHonorarios"></div>
+        </div>
+      </section>
+
+      <!-- ESCRITÓRIO -->
+      <section id="sec-escritorio" class="section">
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:24px">
+          <div style="display:flex;flex-direction:column;gap:7px"><span class="eyebrow">ESCRITÓRIO</span><h1 style="margin:0;font:300 34px var(--font-serif);color:var(--ink)">Contas a pagar</h1></div>
+          <button id="novaContaBtn" class="btn btn-primary">+ Nova conta</button>
+        </div>
+        <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
+          <div class="stat-card card-accent"><span class="label">TOTAL DO MÊS</span><span id="escTotal" class="n">—</span></div>
+          <div class="stat-card danger"><span class="label">VENCE EM BREVE</span><span id="escVence" class="n">—</span></div>
+          <div class="stat-card"><span class="label">JÁ PAGO</span><span id="escPago" class="n">—</span></div>
+        </div>
+        <div class="card">
+          <div class="table-head fin-table"><span class="label">DESPESA</span><span class="label">CATEGORIA</span><span class="label">VENCIMENTO</span><span class="label">VALOR</span><span class="label">SITUAÇÃO</span></div>
+          <div id="listaContas"></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<div id="modalHost"></div>
+
+<script src="js/api.js"></script>
+<script src="js/sync-ui.js"></script>
+<script src="js/user-menu.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Acesso · Jorge Silva Advocacia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/base.css">
+<style>
+  .a2-shell{min-height:100vh;display:grid;grid-template-columns:1.05fr .95fr;background:var(--bg)}
+  .a2-hero{display:flex;flex-direction:column;justify-content:space-between;padding:56px 64px;
+    background:radial-gradient(120% 70% at 30% 20%,rgba(255,255,255,.95),rgba(255,255,255,0) 58%),radial-gradient(110% 60% at 80% 90%,rgba(198,190,176,.5),rgba(255,255,255,0) 55%),linear-gradient(135deg,#f4f1ea,#e7e1d6 46%,#efeae1 68%,#ded7c9)}
+  .a2-mark{width:96px;height:96px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#f2ede4,#e4ddd0) padding-box,linear-gradient(135deg,#e6cd83,#8a6a2b 50%,#c9a24d) border-box;border:2px solid transparent;box-shadow:0 4px 18px rgba(80,60,20,.18),inset 0 1px 2px rgba(255,255,255,.7);animation:ring .7s cubic-bezier(.2,.8,.3,1) both}
+  .a2-mark-txt{font:600 40px 'Spectral',serif}
+  .a2-hero-main{display:flex;flex-direction:column;align-items:flex-start;gap:13px}
+  .a2-wordmark{font:500 24px 'Spectral',serif;letter-spacing:.1em;background:linear-gradient(135deg,#b08d4a,#7a5c25 50%,#caa24e);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .a2-sub{font:700 9.5px 'Space Mono',monospace;letter-spacing:.44em;color:#8a6a2b;text-indent:.44em}
+  .a2-rodape{display:flex;flex-direction:column;gap:10px}
+
+  /* ---- App desktop (Electron) ----
+     A tela de acesso é a porta de entrada do aplicativo administrativo:
+     não há site por trás, a marca ganha destaque e fica centralizada. */
+  body.is-desktop #voltarSite{display:none}
+  body.is-desktop .a2-hero{justify-content:center;gap:40px}
+  body.is-desktop .a2-hero-main{align-items:center;text-align:center}
+  body.is-desktop .a2-mark{width:35%;height:auto;aspect-ratio:1/1;max-width:300px;min-width:150px}
+  body.is-desktop .a2-mark-txt{font-size:clamp(46px,7.2vw,120px)}
+  body.is-desktop .a2-wordmark{font-size:30px}
+  body.is-desktop .a2-sub{font-size:11px}
+  body.is-desktop .a2-rodape{align-items:center;text-align:center}
+  body.is-desktop #heroTexto{max-width:400px}
+
+  /* Toggle discreto de "iniciar com o sistema" (só no app desktop) */
+  .a2-autostart{display:flex;align-items:center;gap:11px;margin-top:26px;padding-top:18px;
+    border-top:1px solid var(--border);animation:fadeIn .6s .4s both}
+  .a2-autostart-txt{font:300 13px/1.5 'Spectral',serif;color:var(--muted-2);cursor:pointer;user-select:none}
+  .a2-form-side{display:flex;flex-direction:column;justify-content:center;padding:56px 60px;background:#fbf9f4;border-left:1px solid #e3ddd0}
+  .a2-form-inner{width:100%;max-width:430px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+  .a2-doc-wrap{position:relative;display:flex;align-items:center}
+  .a2-doc-wrap .spinner{position:absolute;right:16px}
+  .a2-check{position:absolute;right:14px;width:24px;height:24px;border-radius:50%;background:var(--gold-grad);display:flex;align-items:center;justify-content:center;animation:ring .45s cubic-bezier(.2,.8,.3,1) both}
+  .a2-error-box{display:flex;gap:11px;padding:14px 16px;background:var(--danger-bg);border:1px solid var(--danger-border);animation:fadeIn .35s both}
+  .a2-error-bar{width:5px;flex:none;background:var(--danger-ink)}
+  .a2-step{display:flex;flex-direction:column;gap:16px;overflow:hidden;animation:grow .55s cubic-bezier(.2,.8,.3,1) both}
+  .a2-avatar{width:42px;height:42px;flex:none;border-radius:50%;background:linear-gradient(135deg,#efeade,#e2dbcb);border:1px solid var(--border-soft);display:flex;align-items:center;justify-content:center;font:400 18px var(--font-serif);color:var(--gold-deep)}
+  .a2-banner{display:flex;align-items:center;gap:13px;padding:15px 17px;background:#f2ede1;border:1px solid var(--border)}
+  .a2-ring-badge{width:26px;height:26px;flex:none;border-radius:50%;background:var(--gold-grad);display:flex;align-items:center;justify-content:center;animation:ring .5s cubic-bezier(.2,.8,.3,1) both}
+  .a2-strength-bars{flex:1;display:flex;gap:5px}
+  .a2-strength-bars span{flex:1;height:3px;border-radius:3px;background:#e8e2d5;transition:background .35s ease}
+  .a2-success{display:flex;flex-direction:column;align-items:center;gap:16px;padding:22px 0;text-align:center;animation:enterUp .5s cubic-bezier(.2,.8,.3,1) both}
+  .a2-success-badge{width:70px;height:70px;border-radius:50%;background:var(--gold-grad);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 22px rgba(140,105,40,.28);animation:ring .6s cubic-bezier(.2,.8,.3,1) both}
+  .a2-bar-track{width:150px;height:2px;background:#eee7d9;overflow:hidden}
+  .a2-bar-fill{display:block;height:100%;background:var(--gold-grad);transform-origin:left;animation:barGrow 1.4s cubic-bezier(.4,0,.2,1) both}
+  .shake{animation:shake .4s both}
+</style>
+</head>
+<body>
+<div class="a2-shell">
+
+  <div class="a2-hero">
+    <a id="voltarSite" href="index.html" style="align-self:flex-start;font:300 13.5px 'Spectral',serif;color:#8a6a2b">← Voltar ao site</a>
+    <div class="a2-hero-main">
+      <div class="a2-mark"><span class="a2-mark-txt" style="background:linear-gradient(135deg,#caa24e,#8a6a2b 45%,#e6cd83 72%,#9c7a34);-webkit-background-clip:text;background-clip:text;color:transparent">JS</span></div>
+      <div class="a2-wordmark">JORGE SILVA</div>
+      <div class="a2-sub">ADVOCACIA</div>
+      <h1 id="heroTitulo" style="margin:18px 0 0;font:300 38px/1.18 'Spectral',serif;color:#26241f">Área do cliente</h1>
+      <p id="heroTexto" style="margin:0;max-width:430px;font:300 16px/1.75 'Spectral',serif;color:#5f5a4f">Informe seu usuário, CPF/CNPJ ou telefone. Reconhecemos o cadastro e abrimos apenas o passo seguinte — sem trocar de tela.</p>
+    </div>
+    <div class="a2-rodape">
+      <span id="heroBadge" style="font:700 8.5px 'Space Mono',monospace;letter-spacing:.22em;color:#9a917c">ACESSO PROTEGIDO</span>
+      <span id="heroBadgeTexto" style="font:300 13.5px/1.65 'Spectral',serif;color:#7d7566;max-width:390px">Cada cliente enxerga apenas os próprios processos e pagamentos.</span>
+    </div>
+  </div>
+
+  <div class="a2-form-side">
+    <div class="a2-form-inner">
+
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <h2 id="tituloEtapa" style="margin:0;font:300 30px 'Spectral',serif;color:#26241f">Acessar meu portal</h2>
+        <span id="subtituloEtapa" style="font:300 15px/1.7 'Spectral',serif;color:#7d776a">Comece pelo seu usuário ou documento.</span>
+      </div>
+
+      <div class="field">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px">
+          <label id="docLabel" class="label">USUÁRIO, CPF/CNPJ, TELEFONE OU OAB</label>
+          <span id="statusLabel" style="font:700 8.5px 'Space Mono',monospace;letter-spacing:.18em;color:#a2997f;transition:color .3s ease"></span>
+        </div>
+        <div class="a2-doc-wrap">
+          <input id="docInput" type="text" placeholder="seu usuário, documento ou telefone" autocomplete="username">
+          <span id="docSpinner" class="spinner hidden"></span>
+          <span id="docCheck" class="a2-check hidden">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M4 12.5l5 5L20 6.5" stroke="#1c1e22" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="30" stroke-dashoffset="30" style="animation:draw .45s .2s cubic-bezier(.2,.8,.3,1) forwards"></path></svg>
+          </span>
+        </div>
+        <div id="erroBox" class="a2-error-box hidden">
+          <span class="a2-error-bar"></span>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <span id="erroTitulo" style="font:400 14.5px 'Spectral',serif;color:#9a4a35">Não localizado</span>
+            <span id="erroTexto" style="font:300 13.5px/1.65 'Spectral',serif;color:#8a6558">Não encontramos um cadastro ativo com este usuário ou documento. Confira os dados ou procure o escritório.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Password entry: account found, password already set -->
+      <div id="pedirSenhaBox" class="a2-step hidden">
+        <div id="identificadoBox" style="display:flex;align-items:center;gap:13px;padding-top:2px">
+          <span id="avatarInicial" class="a2-avatar">C</span>
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <span id="nomeClienteLabel" style="font:400 17px 'Spectral',serif;color:#26241f"></span>
+            <span style="font:700 8.5px 'Space Mono',monospace;letter-spacing:.16em;color:#8d846f">CADASTRO LOCALIZADO</span>
+          </div>
+        </div>
+        <div id="ambiguoBox" class="a2-banner hidden">
+          <span class="a2-ring-badge" style="background:linear-gradient(135deg,#efeade,#e2dbcb);border:1px solid #ddd6c7">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8a6a2b" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"></circle><circle cx="16" cy="8" r="3.2"></circle><path d="M4 19c0-2.5 2.2-4.2 5-4.2M13 19c0-2.5 2.2-4.2 5-4.2"></path></svg>
+          </span>
+          <span style="font:300 14.5px/1.6 'Spectral',serif;color:#5f5a4f">
+            <b id="ambiguoCount" style="font-weight:500">Dois cadastros</b> usam este acesso. Digite a sua senha — é ela que identifica você.
+          </span>
+        </div>
+        <div class="field">
+          <label class="label">SENHA</label>
+          <input id="senhaInput" type="password" placeholder="••••••••" autocomplete="current-password">
+          <span id="senhaErro" class="field-error hidden">Senha incorreta. Tente novamente.</span>
+        </div>
+        <button id="entrarBtn" class="btn btn-primary btn-block">Entrar</button>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:16px">
+          <button id="limparBtn1" class="btn-text">← Usar outro usuário</button>
+        </div>
+      </div>
+
+      <!-- First access: create a password -->
+      <div id="criarSenhaBox" class="a2-step hidden">
+        <div class="a2-banner">
+          <span class="a2-ring-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 12.5l5 5L20 6.5" stroke="#1c1e22" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="30" stroke-dashoffset="30" style="animation:draw .5s .25s cubic-bezier(.2,.8,.3,1) forwards"></path></svg></span>
+          <span style="font:300 14.5px/1.6 'Spectral',serif;color:#5f5a4f">Olá, <b id="nomeClienteCriar" style="font-weight:500"></b>. Este é o seu <b style="font-weight:500">primeiro acesso</b> — crie uma senha.</span>
+        </div>
+        <div class="field">
+          <label class="label">NOVA SENHA</label>
+          <input id="novaSenhaInput" type="password" placeholder="mínimo de 8 caracteres" autocomplete="new-password">
+          <div style="display:flex;align-items:center;gap:11px;margin-top:2px">
+            <div id="forcaBarras" class="a2-strength-bars"><span></span><span></span><span></span><span></span></div>
+            <span id="forcaLabel" style="font:700 8.5px 'Space Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:#a2997f;white-space:nowrap">defina uma senha</span>
+          </div>
+        </div>
+        <div class="field">
+          <label class="label">CONFIRMAR SENHA</label>
+          <input id="confirmarSenhaInput" type="password" placeholder="repita a senha" autocomplete="new-password">
+          <span id="divergemErro" class="field-error hidden">As senhas não coincidem.</span>
+        </div>
+        <button id="cadastrarBtn" class="btn btn-primary btn-block">Cadastrar senha e entrar</button>
+        <button id="limparBtn2" class="btn-text" style="align-self:flex-start">← Usar outro usuário</button>
+      </div>
+
+      <!-- Success -->
+      <div id="prontoBox" class="a2-success hidden">
+        <span class="a2-success-badge"><svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M4 12.5l5 5L20 6.5" stroke="#1c1e22" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="30" stroke-dashoffset="30" style="animation:draw .55s .3s cubic-bezier(.2,.8,.3,1) forwards"></path></svg></span>
+        <h2 style="margin:0;font:300 27px 'Spectral',serif;color:#26241f">Acesso liberado</h2>
+        <p id="prontoTexto" style="margin:0;max-width:330px;font:300 15px/1.75 'Spectral',serif;color:#7d776a"></p>
+        <div class="a2-bar-track"><span class="a2-bar-fill"></span></div>
+      </div>
+
+      <!-- Só aparece no aplicativo desktop -->
+      <div id="autoStartRow" class="a2-autostart hidden">
+        <button id="autoStartToggle" class="switch" role="switch" aria-checked="false" aria-labelledby="autoStartLabel" title="Iniciar com o sistema">
+          <span class="knob"></span>
+        </button>
+        <label id="autoStartLabel" for="autoStartToggle" class="a2-autostart-txt">Abrir o painel automaticamente ao ligar o computador</label>
+      </div>
+
+    </div>
+  </div>
+</div>
+<script src="js/api.js"></script>
+<script src="js/sync-ui.js"></script>
+<script src="js/acesso.js"></script>
+</body>
+</html>

@@ -1,0 +1,263 @@
+# Jorge Silva Advocacia — Site, Portal do Cliente e Painel do Advogado
+
+Sistema completo do escritório: site institucional, área de acesso, portal do
+cliente, painel administrativo e **aplicativo desktop offline-first** que
+sincroniza com a web quando há internet.
+
+---
+
+## Como rodar
+
+```bash
+npm install
+npm run seed      # cria o banco com dados fictícios (só na primeira vez)
+npm run server    # http://localhost:4178
+```
+
+### Credenciais de teste
+
+**Administrador / titular (senha `admin123`)** — as três formas levam ao mesmo painel:
+
+| Entrar por | Valor |
+|---|---|
+| Usuário | `jorge` |
+| OAB | `OAB/SP 123.456` (ou só `123456`) |
+| CPF próprio | `153.509.460-56` |
+
+**Colaboradores** — a equipe do escritório usa o mesmo painel:
+
+| Colaborador | Função | Usuário | CPF | Senha | Carteira |
+|---|---|---|---|---|---|
+| Beatriz Nunes | Secretária | `beatriz` | `394.478.560-05` | `colab123` | Ana Paula Costa, Carlos Menezes |
+| Rafael Moreira | Estagiário | `rafael` | `681.694.610-70` | *(primeiro acesso)* | Ricardo, Renata, Padaria Estrela |
+
+O titular (Jorge) responde pelos demais clientes e **vê todos**.
+
+**Clientes** — entram por **usuário**, **CPF/CNPJ** ou **telefone**:
+
+| Cliente | Usuário | Documento | Telefone | Senha |
+|---|---|---|---|---|
+| Maria Oliveira Ramos | `maria.oliveira` | `111.444.777-35` | `(11) 90000-0000` | `123456` |
+| João Santos | `joao.santos` | `529.982.247-25` | `(11) 91111-1111` | `123456` |
+| Ana Paula Costa | `ana.costa` | `935.411.347-80` | `(11) 92222-2222` | `123456` |
+| Construtora Alvorada | `alvorada` | `11.222.333/0001-81` | `(11) 3222-4400` | `123456` |
+| Padaria Estrela ME | `padariaestrela` | `45.723.174/0001-10` | `(11) 3444-5500` | `123456` |
+| Carlos Menezes | `carlos.menezes` | `123.456.789-09` | `(11) 93333-3333` | *(primeiro acesso)* |
+
+**Usuário repetido** — os dois cadastros abaixo usam o mesmo usuário
+`rpereira`. Ao digitá-lo, o sistema avisa que há mais de um cadastro e **é a
+senha que identifica quem está entrando**:
+
+| Cliente | Usuário | Documento | Senha |
+|---|---|---|---|
+| Ricardo Alves Pereira | `rpereira` | `307.200.560-77` | `ricardo123` |
+| Renata Pereira Alves | `rpereira` | `877.482.480-11` | `renata123` |
+
+---
+
+## Como funciona o acesso
+
+Há **uma única tela de acesso** e **um único campo** de identificação — não
+existe botão de "acesso do advogado" em lugar nenhum do sistema.
+
+O campo aceita **usuário, CPF/CNPJ, telefone ou número da OAB**. O sistema
+reconhece automaticamente quem está entrando:
+
+- reconheceu o **administrador** → vai direto para o **painel de controle**
+  (`admin.html`);
+- reconheceu um **cliente** → vai para o **portal do cliente**
+  (`portal.html`).
+
+Quando o valor digitado pertence a **mais de um cadastro** (dois clientes com
+o mesmo usuário, por exemplo), o sistema não revela os nomes: ele pede a senha
+e é ela que determina qual cadastro será aberto.
+
+A animação segue o modelo **A2 (login progressivo)**: ao completar a
+identificação, o sistema verifica sozinho e revela apenas o passo seguinte, na
+mesma tela — senha, ou criação de senha no primeiro acesso.
+
+---
+
+## Páginas
+
+| Arquivo | O que é |
+|---|---|
+| `public/index.html` | Site institucional (landing page) |
+| `public/acesso.html` | Tela única de acesso (animação A2) |
+| `public/admin.html` | Painel do advogado |
+| `public/portal.html` | Portal do cliente |
+| `public/download.html` | Página de download do aplicativo |
+
+### Quem enxerga o quê (permissões entre colaboradores)
+
+Cada cliente tem um **colaborador responsável** — quem o cadastrou. Os
+processos do cliente seguem esse mesmo dono.
+
+| Quem | Enxerga |
+|---|---|
+| **Titular** do escritório | **tudo**, sem precisar de autorização de ninguém |
+| Demais colaboradores | os próprios clientes/processos **+** os de quem o autorizou |
+
+Um colaborador cadastrado por outro **não interfere** nos clientes alheios: a
+restrição vale para listar, abrir, editar, excluir, lançar cobrança e
+exportar. Não é só a tela que esconde — as consultas são filtradas e o acesso
+direto à API responde **403**.
+
+**Autorizar alguém:** menu do usuário → **"Quem vê meus processos"**. A lista
+traz os outros colaboradores com um interruptor por pessoa. O titular aparece
+sempre marcado e travado, porque o acesso dele é automático.
+
+**Ver a carteira de outro:** na área de **Processos**, o botão **"Processos de
+outros colaboradores"** abre a lista. Quem autorizou você fica clicável, com a
+contagem de processos; **quem não autorizou aparece apagado, com cadeado e sem
+possibilidade de clique**.
+
+No banco de exemplo: a Beatriz autorizou o Rafael (ele vê a carteira dela),
+mas o Rafael não autorizou a Beatriz — então, para ela, o nome dele aparece
+apagado.
+
+### Cadastrar colaborador
+
+No painel, clicando na **área do usuário logado** (canto inferior esquerdo) há
+a opção **"Cadastrar colaborador"**. Ela abre o formulário de cadastro da
+equipe junto com a lista de quem já tem acesso ao painel.
+
+- O colaborador é criado **sem senha**: ele define a dele no primeiro acesso,
+  como acontece com os clientes.
+- Entra pelo mesmo login (usuário, OAB, CPF ou telefone) e pelo mesmo
+  aplicativo desktop.
+- O **titular não pode ser removido**, e ninguém pode remover o próprio
+  acesso. Remover é uma desativação (`ativo = 0`) — o histórico continua no
+  banco, mas a conta deixa de ser reconhecida no login.
+- Os cadastros entram no diário de alterações e **sincronizam** com a web como
+  qualquer outro registro.
+
+Essa opção existe apenas no menu do painel administrativo; o menu do portal do
+cliente não a possui, e a rota `/api/colaboradores` responde **401** para
+quem não é administrador.
+
+### Download do aplicativo
+
+Chega-se à página de download por dois caminhos: o botão **"Baixar o
+aplicativo"** no topo da página inicial, ou clicando na **área do usuário
+logado** (canto inferior esquerdo do painel / canto superior direito do
+portal) e escolhendo **"Baixar aplicativo"**.
+
+Na página, à **esquerda** fica a versão **Windows** e à **direita** os botões
+separados de **App Store** e **Google Play**.
+
+A versão Windows é **exclusiva do administrador**, porque o aplicativo desktop
+é a ferramenta de administração do escritório. Quem não é administrador vê no
+lugar dela um aviso explicando isso. A restrição é aplicada **no servidor**
+(`GET /api/download/windows` responde 401 para visitantes e clientes), não
+apenas escondendo o botão.
+
+---
+
+## Exportar clientes
+
+Na página **Clientes**, logo abaixo da lista, há um botão apenas de texto
+(sem fundo): **"Exportar clientes ▾"**. Ele abre as opções de formato:
+
+- **CSV** (`.csv`) — separado por `;`, com BOM, abre direto no Excel brasileiro
+- **Excel** (`.xlsx`)
+- **JSON** (`.json`)
+- **Banco de dados SQLite** (`.db`) — arquivo SQLite real, para importar em
+  outro sistema
+
+---
+
+## Aplicativo desktop (offline-first)
+
+```bash
+npm run icon            # gera build/icon.ico (só quando a marca mudar)
+npm run electron        # roda o app
+npm run dist            # gera o executável em dist/
+```
+
+O app sobe **o mesmo servidor e o mesmo banco** dentro da própria máquina, em
+uma porta local. Ele funciona **100% sem internet**.
+
+### É um aplicativo administrativo
+
+O desktop é a ferramenta de administração do escritório, e isso é aplicado de
+verdade — não só escondendo botões:
+
+- ele **abre direto na tela de acesso** (`acesso.html`); não existe site
+  institucional dentro do aplicativo;
+- a tela se apresenta como **"Acesso administrativo"**, com a marca ampliada e
+  centralizada, e aceita **usuário, OAB ou CPF do advogado**;
+- o servidor embutido roda com `adminOnly: true`: um CPF de cliente **nem é
+  reconhecido** na verificação, e um POST de login de cliente responde
+  **403**.
+
+### Ícone
+
+`build/icon.ico` é o monograma **JS** sozinho — sem fundo e sem o arco
+dourado, com transparência real. É gerado por `npm run icon`, que renderiza a
+marca com o próprio Electron e monta o `.ico` (16 a 256 px). Ele é embutido no
+executável e usado na janela e na barra de tarefas.
+
+### Iniciar com o sistema
+
+Na tela de acesso do aplicativo há um **toggle discreto** — *"Abrir o painel
+automaticamente ao ligar o computador"*. Ele grava/remove a entrada de
+inicialização do Windows via `app.setLoginItemSettings`. No build portátil o
+registro aponta para `PORTABLE_EXECUTABLE_FILE` (o `.exe` de verdade), e não
+para a cópia temporária que o Windows cria ao executá-lo.
+
+### Sincronização
+
+Um indicador no canto inferior direito mostra o estado: *Trabalhando offline*,
+*N alterações para enviar*, *Dados sincronizados* ou *conflitos para revisar*.
+
+Toda alteração feita sem conexão é registrada em um diário (`change_log`) com
+uma descrição em português. Quando a internet volta:
+
+1. **O aviso aparece sozinho**, com a lista explícita e simples do que foi
+   alterado naquele computador (ex.: *"Cliente Fernanda Lima Souza cadastrado"*).
+2. O administrador clica em **"Enviar e sincronizar"** para subir as mudanças.
+3. Se **os dois lados** alteraram o mesmo registro, nada é sobrescrito em
+   silêncio: o sistema mostra as duas versões lado a lado e pergunta qual
+   manter — **"Enviar a minha versão"** ou **"Manter a do servidor"**.
+
+Para testar a sincronização localmente, suba a instância que representa a web:
+
+```bash
+npm run cloud-sim       # http://localhost:4179 (banco data/cloud.sqlite)
+```
+
+O endereço do servidor de sincronização fica em `config.json` →
+`syncServerUrl`. Basta trocar para o endereço real quando o sistema for
+publicado.
+
+---
+
+## Estrutura
+
+```
+server/
+  app.js              cria o Express + banco (usado pela web e pelo desktop)
+  start.js            servidor web
+  db/
+    schema.sql        estrutura das tabelas
+    index.js          wrapper do SQLite (sql.js/WASM)
+    seed.js           dados fictícios
+  lib/
+    password.js       hash scrypt
+    session.js        sessões por cookie
+    sync-client.js    motor de sincronização (lado desktop)
+    sync-tables.js    tabelas que participam da sincronização
+  routes/             auth, clients, processos, financeiro, me, dashboard,
+                      export, sync
+public/               site, portal, painel (HTML/CSS/JS sem build)
+electron/             main.js (processo principal) + preload.js (ponte segura)
+scripts/
+  make-icon.js        gera build/icon.ico (monograma JS, sem fundo)
+  start-cloud-sim.js  instância que representa a web, para testar sync
+build/                icon.ico / icon.png da marca
+data/                 bancos SQLite (não versionados)
+```
+
+O banco é **SQLite de verdade** (`data/local.sqlite`) — pode ser aberto em
+qualquer ferramenta de SQLite.
