@@ -293,8 +293,34 @@
     el('autoStartLabel').addEventListener('click', (e) => { e.preventDefault(); alternar(); });
   }
 
+  // Se já há sessão, oferecer continuar em vez de pedir login outra vez.
+  async function verificarSessaoAtiva() {
+    let sessao;
+    try {
+      sessao = await Api.get('/api/auth/session');
+    } catch (e) {
+      return false;
+    }
+    if (!sessao || !sessao.role) return false;
+
+    const destino = sessao.role === 'admin' ? 'admin.html' : 'portal.html';
+    el('jaNome').textContent = sessao.nome || '';
+    el('jaInicial').textContent = (sessao.nome || '?').charAt(0).toUpperCase();
+    el('jaPapel').textContent = sessao.role === 'admin' ? 'PAINEL DO ESCRITÓRIO' : 'PORTAL DO CLIENTE';
+    el('jaConectado').classList.remove('hidden');
+    el('blocoLogin').classList.add('hidden');
+    document.querySelector('.field').classList.add('hidden');
+
+    el('jaContinuar').addEventListener('click', () => { window.location.href = destino; });
+    el('jaTrocar').addEventListener('click', async () => {
+      await Api.post('/api/auth/logout');
+      window.location.reload();
+    });
+    return true;
+  }
+
   applyCopy();
   resetSteps();
   initAutoStart();
-  docInput.focus();
+  verificarSessaoAtiva().then((tem) => { if (!tem) docInput.focus(); });
 })();

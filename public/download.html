@@ -24,9 +24,13 @@
   .dl-store-mark{width:44px;height:44px;flex:none;border-radius:10px;background:var(--dark);
     display:flex;align-items:center;justify-content:center}
   .dl-note{display:flex;gap:11px;padding:15px 17px;background:#f2ede1;border:1px solid var(--border)}
-  .dl-restrito{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
-    padding:64px 56px;text-align:center;background:var(--bg-alt);border-right:1px solid var(--border-soft)}
-  @media (max-width:900px){.dl-grid{grid-template-columns:1fr}.dl-left,.dl-restrito{border-right:none;border-bottom:1px solid var(--border-soft)}}
+  /* Sem a versão para computador (clientes e visitantes), a coluna do
+     celular ocupa a página inteira e fica centralizada. */
+  .dl-grid.so-mobile{grid-template-columns:1fr}
+  .dl-grid.so-mobile .dl-right{align-items:center;text-align:center;padding:72px 56px}
+  .dl-grid.so-mobile .dl-right > *{max-width:460px;width:100%}
+  .dl-grid.so-mobile .dl-store{text-align:left}
+  @media (max-width:900px){.dl-grid{grid-template-columns:1fr}.dl-left{border-right:none;border-bottom:1px solid var(--border-soft)}}
 </style>
 </head>
 <body>
@@ -41,19 +45,19 @@
     </span>
   </a>
   <nav style="display:flex;align-items:center;gap:34px">
-    <a href="index.html" style="font:400 14px 'Spectral',serif;color:#d6d2c9">Início</a>
-    <a href="index.html#atuacao" style="font:400 14px 'Spectral',serif;color:#d6d2c9">Áreas de atuação</a>
-    <a href="acesso.html" style="font:500 13.5px 'Spectral',serif;color:#1c1e22;background:linear-gradient(135deg,#e6cd83,#b08d4a);padding:10px 22px;border-radius:2px;white-space:nowrap">Acessar portal</a>
+    <a href="index.html" data-sessao="visitante" style="font:400 14px 'Spectral',serif;color:#d6d2c9">Início</a>
+    <a href="index.html#atuacao" data-sessao="visitante" style="font:400 14px 'Spectral',serif;color:#d6d2c9">Áreas de atuação</a>
+    <a href="acesso.html" data-sessao="acesso" style="font:500 13.5px 'Spectral',serif;color:#1c1e22;background:linear-gradient(135deg,#e6cd83,#b08d4a);padding:10px 22px;border-radius:2px;white-space:nowrap">Acessar portal</a>
   </nav>
 </header>
 
 <section class="dl-hero">
   <span style="font:700 10px 'Space Mono',monospace;letter-spacing:.44em;color:#b08d4a;text-indent:.44em">APLICATIVO</span>
   <h1 style="margin:0;font:300 48px/1.12 'Spectral',serif;color:#f4f1ea;max-width:760px">Acompanhe seus processos de onde você estiver.</h1>
-  <p style="margin:0;max-width:560px;font:300 16.5px/1.75 'Spectral',serif;color:#b4b0a6">Escolha a versão para o seu dispositivo. O acesso é o mesmo do portal — seu documento e a sua senha.</p>
+  <p id="dlSubtitulo" style="margin:0;max-width:560px;font:300 16.5px/1.75 'Spectral',serif;color:#b4b0a6">Baixe o aplicativo para o seu celular. O acesso é o mesmo do portal — seu documento e a sua senha.</p>
 </section>
 
-<div class="dl-grid">
+<div class="dl-grid so-mobile" id="dlGrid">
 
   <!-- ESQUERDA · WINDOWS (somente administrador) -->
   <div id="colWindows" class="dl-col dl-left hidden">
@@ -78,23 +82,6 @@
         Uso exclusivo do escritório. Este aplicativo dá acesso ao cadastro completo de clientes, processos e financeiro.
       </span>
     </div>
-  </div>
-
-  <!-- ESQUERDA (alternativa) · aviso para quem não é administrador -->
-  <div id="colRestrito" class="dl-restrito hidden">
-    <div class="dl-icon">
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#8a6a2b" stroke-width="1.8" aria-hidden="true">
-        <rect x="4" y="10.5" width="16" height="10" rx="2"></rect>
-        <path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"></path>
-      </svg>
-    </div>
-    <span class="eyebrow">VERSÃO PARA COMPUTADOR</span>
-    <h2 style="margin:0;font:300 30px 'Spectral',serif;color:var(--ink)">Restrita ao escritório</h2>
-    <p style="margin:0;max-width:380px;font:300 15px/1.75 'Spectral',serif;color:var(--ink-soft)">
-      O aplicativo para Windows é a ferramenta de administração do escritório e não é distribuído aos clientes.
-      Para acompanhar seus processos, use o aplicativo de celular ao lado ou o portal no navegador.
-    </p>
-    <a href="acesso.html" class="btn-text" style="font-size:14px">Acessar o portal pelo navegador →</a>
   </div>
 
   <!-- DIREITA · CELULAR -->
@@ -157,29 +144,34 @@
 </footer>
 
 <script src="js/api.js"></script>
+<script src="js/nav-sessao.js"></script>
 <script src="js/sync-ui.js"></script>
 <script>
+// A versão para computador é do escritório: só o administrador a enxerga.
+// Cliente e visitante recebem a página apenas com as opções de celular.
 (async () => {
   const colWin = document.getElementById('colWindows');
-  const colRestrito = document.getElementById('colRestrito');
+  const grade = document.getElementById('dlGrid');
+  const subtitulo = document.getElementById('dlSubtitulo');
   try {
     const s = await Api.get('/api/download/status');
-    if (s.isAdmin && s.windows.allowed) {
-      colWin.classList.remove('hidden');
-      const meta = document.getElementById('windowsMeta');
-      const btn = document.getElementById('btnWindows');
-      if (s.windows.available) {
-        meta.textContent = `${s.windows.filename} · ${s.windows.sizeMb} MB`;
-      } else {
-        meta.textContent = 'INSTALADOR AINDA NÃO GERADO — RODE "NPM RUN DIST"';
-        btn.classList.add('btn-outline');
-        btn.classList.remove('btn-primary');
-      }
+    if (!s.isAdmin || !s.windows.allowed) return;
+
+    colWin.classList.remove('hidden');
+    grade.classList.remove('so-mobile');
+    subtitulo.textContent = 'Escolha a versão para o seu dispositivo. O acesso é o mesmo do portal — seu documento e a sua senha.';
+
+    const meta = document.getElementById('windowsMeta');
+    const btn = document.getElementById('btnWindows');
+    if (s.windows.available) {
+      meta.textContent = `${s.windows.filename} · ${s.windows.sizeMb} MB`;
     } else {
-      colRestrito.classList.remove('hidden');
+      meta.textContent = 'INSTALADOR AINDA NÃO GERADO — RODE "NPM RUN DIST"';
+      btn.classList.add('btn-outline');
+      btn.classList.remove('btn-primary');
     }
   } catch (e) {
-    colRestrito.classList.remove('hidden');
+    // Sem sessão: segue como visitante, só com o celular.
   }
 })();
 </script>

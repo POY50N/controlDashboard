@@ -240,6 +240,37 @@
           <div style="display:flex;flex-direction:column;gap:7px"><span class="eyebrow">FINANCEIRO</span><h1 style="margin:0;font:300 34px var(--font-serif);color:var(--ink)">Honorários dos clientes</h1></div>
           <button id="novaCobrancaBtn" class="btn btn-primary">+ Lançar cobrança</button>
         </div>
+
+        <!-- Relatório mensal: escolher a competência e exportar -->
+        <div class="card" style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:18px;padding:20px 22px">
+          <div class="field" style="min-width:210px">
+            <label class="label">MÊS DO RELATÓRIO</label>
+            <select id="mesRelatorio"></select>
+          </div>
+          <span id="situacaoMes" style="font:300 13px/1.5 var(--font-serif);color:var(--muted);padding-bottom:12px;max-width:260px"></span>
+          <div style="flex:1"></div>
+          <button id="btnExportarFin" class="btn btn-ghost">Exportar relatório ▾</button>
+          <button id="btnAgendaFin" class="btn-text" style="padding-bottom:12px">Agendamento do fechamento</button>
+        </div>
+        <div id="menuExportFin" class="hidden card" style="display:flex;flex-direction:column;gap:14px;padding:22px">
+          <span class="label">O QUE BAIXAR</span>
+          <div style="display:flex;flex-wrap:wrap;gap:10px">
+            <button class="btn btn-outline" data-exp="ultimo-mes">Último mês fechado</button>
+            <button class="btn btn-outline" data-exp="mes">Mês selecionado acima</button>
+            <button class="btn btn-outline" data-exp="ultimo-ano">Últimos 12 meses</button>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;padding-top:12px;border-top:1px solid var(--border)">
+            <div class="field" style="min-width:160px"><label class="label">DE</label><select id="expDe"></select></div>
+            <div class="field" style="min-width:160px"><label class="label">ATÉ</label><select id="expAte"></select></div>
+            <button class="btn btn-outline" data-exp="periodo">Baixar o período</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;padding-top:12px;border-top:1px solid var(--border)">
+            <span class="label">FORMATO</span>
+            <label style="display:flex;align-items:center;gap:7px;font:300 14px var(--font-serif);cursor:pointer"><input type="radio" name="fmtFin" value="xlsx" checked style="accent-color:#b08d4a"> Excel (.xlsx)</label>
+            <label style="display:flex;align-items:center;gap:7px;font:300 14px var(--font-serif);cursor:pointer"><input type="radio" name="fmtFin" value="csv" style="accent-color:#b08d4a"> CSV</label>
+            <label style="display:flex;align-items:center;gap:7px;font:300 14px var(--font-serif);cursor:pointer"><input type="radio" name="fmtFin" value="json" style="accent-color:#b08d4a"> JSON</label>
+          </div>
+        </div>
         <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
           <div class="stat-card card-accent"><span class="label">RECEBIDO NO MÊS</span><span id="finRecebido" class="n">—</span></div>
           <div class="stat-card"><span class="label">A RECEBER</span><span id="finAReceber" class="n">—</span></div>
@@ -256,6 +287,15 @@
         <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:24px">
           <div style="display:flex;flex-direction:column;gap:7px"><span class="eyebrow">ESCRITÓRIO</span><h1 style="margin:0;font:300 34px var(--font-serif);color:var(--ink)">Contas a pagar</h1></div>
           <button id="novaContaBtn" class="btn btn-primary">+ Nova conta</button>
+        </div>
+
+        <!-- Contas buscadas sozinhas no portal do fornecedor -->
+        <div style="display:flex;flex-direction:column;gap:13px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:16px">
+            <span class="label">CONTAS AUTOMÁTICAS</span>
+            <button id="btnNovaAuto" class="btn-text">+ Buscar conta no portal do fornecedor</button>
+          </div>
+          <div id="listaContasAuto" style="display:flex;flex-wrap:wrap;gap:14px"></div>
         </div>
         <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
           <div class="stat-card card-accent"><span class="label">TOTAL DO MÊS</span><span id="escTotal" class="n">—</span></div>

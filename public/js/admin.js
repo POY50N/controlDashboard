@@ -43,6 +43,7 @@
 
     aplicarAreas();
     initNav();
+    initBusca();
     initClientes();
     initNovoCliente();
     initProcessos();
@@ -157,8 +158,34 @@
   // ---------- clientes ----------
   let clientesCache = [];
   function initClientes() {
-    el('buscaInput').addEventListener('input', renderClientes);
     el('exportToggle').addEventListener('click', () => el('exportMenu').classList.toggle('hidden'));
+  }
+
+  // ---------- busca global ----------
+  // A busca vale para clientes E processos: digitando em qualquer aba, ela
+  // leva para a lista certa e filtra. Antes só funcionava dentro de Clientes.
+  function initBusca() {
+    const campo = el('buscaInput');
+    const alvo = podeVer('clientes') ? 'clientes' : (podeVer('processos') ? 'processos' : null);
+    if (!alvo) { campo.classList.add('hidden'); return; }
+
+    campo.placeholder = podeVer('clientes') && podeVer('processos')
+      ? 'Buscar cliente ou processo (nome, documento, nº)'
+      : (podeVer('clientes') ? 'Buscar cliente por nome ou documento' : 'Buscar processo por nº, título ou cliente');
+
+    let timer = null;
+    campo.addEventListener('input', () => {
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        const termo = campo.value.trim();
+        const secaoAtual = document.querySelector('.section.active');
+        const emLista = secaoAtual && ['sec-clientes', 'sec-processos'].includes(secaoAtual.id);
+        // Digitou fora de uma lista? Leva para a lista principal permitida.
+        if (termo && !emLista) { await goTo(alvo); return; }
+        if (secaoAtual && secaoAtual.id === 'sec-processos') { renderProcessos(); return; }
+        renderClientes();
+      }, 180);
+    });
   }
 
   async function loadClientes() {
@@ -169,8 +196,14 @@
   }
 
   function renderClientes() {
-    const q = (el('buscaInput').value || '').toLowerCase();
-    const rows = clientesCache.filter((c) => !q || c.nome.toLowerCase().includes(q) || c.documento.includes(q.replace(/\D/g, '')));
+    const q = (el('buscaInput').value || '').trim().toLowerCase();
+    const qNum = q.replace(/\D/g, '');
+    const rows = clientesCache.filter((c) => {
+      if (!q) return true;
+      if (c.nome.toLowerCase().includes(q)) return true;
+      if ((c.responsavel || '').toLowerCase().includes(q)) return true;
+      return qNum.length >= 3 && c.documento.includes(qNum);
+    });
     el('listaClientes').innerHTML = rows.map((c) => `
       <div class="table-row clients-table">
         <div style="display:flex;flex-direction:column;gap:3px"><span style="font:400 16px var(--font-serif);color:var(--ink)">${c.nome}</span><span style="font:300 12.5px var(--font-serif);color:var(--muted)">${c.tipo === 'PF' ? 'Pessoa física' : 'Empresa'}</span></div>
@@ -179,7 +212,7 @@
         ${tagHtml(c.tag, c.kind)}
         <span style="font:300 14px var(--font-serif);color:var(--ink-soft)">${c.ultimoContato || '—'}</span>
         <button class="btn-text" data-remove="${c.id}">Remover</button>
-      </div>`).join('') || emptyRow('Nenhum cliente encontrado.');
+      </div>`).join('') || emptyRow(q ? `Nenhum cliente encontrado para "${q}".` : 'Nenhum cliente cadastrado.');
 
     document.querySelectorAll('[data-remove]').forEach((btn) => {
       btn.addEventListener('click', async () => {
@@ -253,6 +286,8 @@
   // de um colaborador específico.
   let escopoProcessos = null;
 
+  let processosCache = [];
+
   async function loadProcessos() {
     const url = escopoProcessos ? '/api/processos?owner=' + escopoProcessos : '/api/processos';
     let res;
@@ -263,8 +298,21 @@
       escopoProcessos = null;
       res = await Api.get('/api/processos');
     }
+    processosCache = res.processos;
+    renderProcessos();
+  }
 
-    el('listaProcessos').innerHTML = res.processos.map((p) => {
+  function renderProcessos() {
+    const q = (el('buscaInput').value || '').trim().toLowerCase();
+    const qNum = q.replace(/\D/g, '');
+    const lista = processosCache.filter((p) => {
+      if (!q) return true;
+      const alvo = `${p.titulo || ''} ${p.area || ''} ${p.cliente_nome || ''} ${p.vara || ''}`.toLowerCase();
+      const numero = (p.numero || '').replace(/\D/g, '');
+      return alvo.includes(q) || (qNum.length >= 3 && numero.includes(qNum));
+    });
+
+    el('listaProcessos').innerHTML = lista.map((p) => {
       const st = PROC_STATUS[p.status] || { label: p.status, kind: 'mute' };
       return `<div class="table-row procs-table" data-open="${p.id}" style="cursor:pointer">
         <div style="display:flex;flex-direction:column;gap:3px">
@@ -275,7 +323,7 @@
         <span style="font:700 9.5px var(--font-mono);color:var(--muted)">${p.numero || '—'}</span>
         ${tagHtml(st.label, st.kind)}
       </div>`;
-    }).join('') || emptyRow('Nenhum processo nesta carteira.');
+    }).join('') || emptyRow(q ? `Nenhum processo encontrado para "${q}".` : 'Nenhum processo nesta carteira.');
 
     document.querySelectorAll('[data-open]').forEach((row) => {
       row.addEventListener('click', () => openProcesso(row.dataset.open));
@@ -386,31 +434,128 @@
   }
 
   // ---------- financeiro ----------
-  function initFinanceiro() {
-    el('novaCobrancaBtn').addEventListener('click', openNovaCobrancaModal);
+  const MES_NOME = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+  function rotuloCompetencia(c) {
+    const [a, m] = c.split('-');
+    return `${MES_NOME[Number(m) - 1]} de ${a}`;
   }
 
-  async function loadFinanceiro() {
-    const res = await Api.get('/api/financeiro/honorarios');
-    el('finRecebido').textContent = centavosToBRL(res.totals.recebidoMes);
-    el('finAReceber').textContent = centavosToBRL(res.totals.aReceber);
-    el('finVencido').textContent = centavosToBRL(res.totals.vencido);
-    el('listaHonorarios').innerHTML = res.honorarios.map((h) => {
+  let mesesRelatorio = [];
+
+  function initFinanceiro() {
+    el('novaCobrancaBtn').addEventListener('click', openNovaCobrancaModal);
+    el('btnExportarFin').addEventListener('click', () => el('menuExportFin').classList.toggle('hidden'));
+    el('mesRelatorio').addEventListener('change', () => carregarMesRelatorio(el('mesRelatorio').value));
+    el('btnAgendaFin').addEventListener('click', abrirAgendamento);
+
+    document.querySelectorAll('[data-exp]').forEach((btn) => btn.addEventListener('click', () => {
+      const escopo = btn.dataset.exp;
+      const formato = document.querySelector('input[name="fmtFin"]:checked').value;
+      const p = new URLSearchParams({ escopo, formato });
+      if (escopo === 'mes') p.set('competencia', el('mesRelatorio').value);
+      if (escopo === 'periodo') {
+        const de = el('expDe').value, ate = el('expAte').value;
+        if (de > ate) { toast('O mês inicial precisa ser anterior ao final.', 'error'); return; }
+        p.set('de', de); p.set('ate', ate);
+      }
+      window.location.href = '/api/relatorios/export?' + p.toString();
+    }));
+  }
+
+  async function carregarMesesRelatorio() {
+    const res = await Api.get('/api/relatorios/meses');
+    mesesRelatorio = res.meses;
+    if (!mesesRelatorio.length) {
+      el('situacaoMes').textContent = 'Ainda não há lançamentos para montar um relatório.';
+      return;
+    }
+    const opcoes = mesesRelatorio.map((m) =>
+      `<option value="${m.competencia}">${rotuloCompetencia(m.competencia)}${m.fechado ? ' · fechado' : ''}</option>`).join('');
+    ['mesRelatorio', 'expDe', 'expAte'].forEach((id) => { el(id).innerHTML = opcoes; });
+
+    const preferido = mesesRelatorio.find((m) => m.competencia === res.anterior) || mesesRelatorio[0];
+    el('mesRelatorio').value = preferido.competencia;
+    el('expAte').value = mesesRelatorio[0].competencia;
+    el('expDe').value = mesesRelatorio[Math.min(mesesRelatorio.length - 1, 11)].competencia;
+    await carregarMesRelatorio(preferido.competencia);
+  }
+
+  async function carregarMesRelatorio(competencia) {
+    if (!competencia) return;
+    const r = await Api.get('/api/relatorios/mes/' + competencia);
+    el('finRecebido').textContent = centavosToBRL(r.recebido);
+    el('finAReceber').textContent = centavosToBRL(r.aReceber);
+    el('finVencido').textContent = centavosToBRL(r.vencido);
+    el('situacaoMes').innerHTML = r.fechado
+      ? `Mês <b style="font-weight:500">fechado</b> em ${new Date(r.fechadoEm.replace(' ', 'T')).toLocaleDateString('pt-BR')}. Os valores estão congelados.`
+      : 'Mês <b style="font-weight:500">em aberto</b> — os valores mudam conforme os lançamentos.';
+
+    el('listaHonorarios').innerHTML = (r.honorarios || []).map((h) => {
       const st = HONOR_STATUS[h.status] || { label: h.status, kind: 'mute' };
       return `<div class="table-row fin-table">
-        <span style="font:400 15.5px var(--font-serif);color:var(--ink)">${h.cliente_nome}</span>
+        <span style="font:400 15.5px var(--font-serif);color:var(--ink)">${h.cliente_nome || '—'}</span>
         <span style="font:300 14.5px var(--font-serif);color:var(--ink-soft)">${h.referencia}</span>
         <span style="font:300 14.5px var(--font-serif);color:var(--ink-soft)">${formatDateBR(h.vencimento)}</span>
         <span style="font:400 15px var(--font-serif);color:var(--ink)">${centavosToBRL(h.valor_centavos)}</span>
-        <div style="display:flex;align-items:center;gap:10px">${tagHtml(st.label, st.kind)}${h.status !== 'pago' ? `<button class="btn-text" data-pay="${h.id}">Marcar pago</button>` : ''}</div>
+        <div style="display:flex;align-items:center;gap:10px">${tagHtml(st.label, st.kind)}${!r.fechado && h.status !== 'pago' ? `<button class="btn-text" data-pay="${h.id}">Marcar pago</button>` : ''}</div>
       </div>`;
-    }).join('') || emptyRow('Nenhuma cobrança lançada.');
+    }).join('') || emptyRow('Nenhuma cobrança neste mês.');
 
     document.querySelectorAll('[data-pay]').forEach((btn) => btn.addEventListener('click', async () => {
       await Api.put('/api/financeiro/honorarios/' + btn.dataset.pay, { status: 'pago' });
       toast('Cobrança marcada como paga.');
       loadFinanceiro();
     }));
+  }
+
+  async function abrirAgendamento() {
+    const a = await Api.get('/api/relatorios/agendamento');
+    openModal(`
+      <h2 style="margin:0 0 6px;font:300 26px var(--font-serif)">Agendamento automático</h2>
+      <p style="margin:0 0 20px;font:300 14.5px/1.7 var(--font-serif);color:var(--muted)">
+        Quando o sistema deve fechar o mês do financeiro e quando deve procurar as faturas nos portais.
+      </p>
+      <form id="agForm" style="display:flex;flex-direction:column;gap:18px">
+        <div class="card" style="display:flex;flex-direction:column;gap:12px;padding:20px">
+          <span class="label">FECHAMENTO DO FINANCEIRO</span>
+          <span style="font:300 13px/1.6 var(--font-serif);color:var(--muted)">Guarda uma cópia do mês anterior e reinicia o acompanhamento.</span>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div class="field"><label class="label">DIA DO MÊS</label><input id="agFinDia" type="number" min="1" max="28" value="${a.financeiro.dia}"></div>
+            <div class="field"><label class="label">HORA</label><input id="agFinHora" type="time" value="${a.financeiro.hora}"></div>
+          </div>
+        </div>
+        <div class="card" style="display:flex;flex-direction:column;gap:12px;padding:20px">
+          <span class="label">CONSULTA DAS CONTAS AUTOMÁTICAS</span>
+          <span style="font:300 13px/1.6 var(--font-serif);color:var(--muted)">Busca a fatura no portal de cada fornecedor cadastrado.</span>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div class="field"><label class="label">DIA DO MÊS</label><input id="agContaDia" type="number" min="1" max="28" value="${a.contas.dia}"></div>
+            <div class="field"><label class="label">HORA</label><input id="agContaHora" type="time" value="${a.contas.hora}"></div>
+          </div>
+        </div>
+        <span style="font:300 12.5px/1.6 var(--font-serif);color:var(--muted)">O dia vai até 28 para que a data exista em todos os meses.</span>
+        <div style="display:flex;justify-content:flex-end;gap:12px">
+          <button type="button" class="btn btn-outline" id="agCancel">Fechar</button>
+          <button type="submit" class="btn btn-primary">Salvar agendamento</button>
+        </div>
+      </form>`);
+    el('agCancel').addEventListener('click', closeModal);
+    el('agForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await Api.put('/api/relatorios/agendamento', {
+          financeiro: { dia: el('agFinDia').value, hora: el('agFinHora').value },
+          contas: { dia: el('agContaDia').value, hora: el('agContaHora').value }
+        });
+        toast('Agendamento salvo.');
+        closeModal();
+      } catch (err) {
+        toast(err.message || 'Não foi possível salvar.', 'error');
+      }
+    });
+  }
+
+  async function loadFinanceiro() {
+    await carregarMesesRelatorio();
   }
 
   function openNovaCobrancaModal() {
@@ -442,9 +587,254 @@
   // ---------- escritório ----------
   function initEscritorio() {
     el('novaContaBtn').addEventListener('click', openNovaContaModal);
+    el('btnNovaAuto').addEventListener('click', abrirNovaContaAuto);
+  }
+
+  const STATUS_AUTO = {
+    ok: { txt: 'ATUALIZADA', cls: 'status-ok' },
+    erro: { txt: 'FALHOU', cls: 'status-erro' },
+    pendente: { txt: 'AGUARDANDO', cls: 'status-pendente' }
+  };
+
+  async function carregarContasAuto() {
+    const box = el('listaContasAuto');
+    if (!box) return;
+    const res = await Api.get('/api/contas-auto');
+    if (!res.contas.length) {
+      box.innerHTML = `<span style="font:300 14px var(--font-serif);color:var(--muted)">Nenhuma conta automática. Cadastre uma para o sistema buscar a fatura sozinho.</span>`;
+      return;
+    }
+    box.innerHTML = res.contas.map((c) => {
+      const st = STATUS_AUTO[c.status] || STATUS_AUTO.pendente;
+      const f = c.fatura;
+      return `<div class="conta-auto">
+        <div class="conta-auto-topo">
+          <span class="conta-auto-mark">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="#e6cd83" aria-hidden="true"><path d="M13 2L4.5 13.5H11l-1 8.5 8.5-11.5H12l1-8.5z"/></svg>
+          </span>
+          <div style="display:flex;flex-direction:column;gap:3px;flex:1">
+            <span style="font:400 16px var(--font-serif);color:var(--ink)">${c.apelido}</span>
+            <span style="font:700 8px var(--font-mono);letter-spacing:.14em;color:var(--muted)">UC ${c.unidadeConsumidora || '—'}</span>
+          </div>
+          <span class="status-ponto ${st.cls}">${st.txt}</span>
+        </div>
+        ${f ? `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px">
+            <span style="font:300 13.5px var(--font-serif);color:var(--muted-2)">Vence ${formatDateBR(f.vencimento)}</span>
+            <span style="font:400 19px var(--font-serif);color:var(--ink)">${centavosToBRL(f.valorCentavos)}</span>
+          </div>` : `<span style="font:300 13.5px var(--font-serif);color:var(--muted)">${c.mensagem || 'Sem fatura obtida ainda.'}</span>`}
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          ${f ? `<button class="btn btn-primary" style="padding:11px 20px;font-size:13.5px" data-fatura="${c.id}">Pagar fatura</button>` : ''}
+          <button class="btn-text" data-consultar="${c.id}">Consultar agora</button>
+          <button class="btn-text" data-remauto="${c.id}" data-nome="${c.apelido}">Remover</button>
+        </div>
+        ${c.simulado ? '<span style="font:700 7.5px var(--font-mono);letter-spacing:.16em;color:var(--warn-ink);background:var(--warn-bg);padding:4px 8px;align-self:flex-start">DADOS SIMULADOS</span>' : ''}
+      </div>`;
+    }).join('');
+
+    box.querySelectorAll('[data-fatura]').forEach((b) => b.addEventListener('click', () => abrirFatura(b.dataset.fatura)));
+    box.querySelectorAll('[data-consultar]').forEach((b) => b.addEventListener('click', async () => {
+      b.textContent = 'Consultando…';
+      try {
+        await Api.post(`/api/contas-auto/${b.dataset.consultar}/consultar`);
+        toast('Fatura atualizada.');
+      } catch (err) {
+        toast(err.message || 'Não foi possível consultar o portal.', 'error');
+      }
+      carregarContasAuto();
+      loadEscritorio();
+    }));
+    box.querySelectorAll('[data-remauto]').forEach((b) => b.addEventListener('click', async () => {
+      if (!confirm(`Remover a conta automática "${b.dataset.nome}"?`)) return;
+      await Api.del('/api/contas-auto/' + b.dataset.remauto);
+      toast('Conta automática removida.');
+      carregarContasAuto();
+    }));
+  }
+
+  // Desenha o QR com módulos arredondados e olhos destacados.
+  function svgDoQr(qr, lado = 240) {
+    const n = qr.tamanho;
+    const p = lado / n;
+    const r = p * 0.34;
+    const dentroDoOlho = (x, y) =>
+      (x < 7 && y < 7) || (x >= n - 7 && y < 7) || (x < 7 && y >= n - 7);
+
+    let pontos = '';
+    for (let y = 0; y < n; y++) {
+      for (let x = 0; x < n; x++) {
+        if (!qr.modulos[y][x] || dentroDoOlho(x, y)) continue;
+        pontos += `<rect x="${(x * p).toFixed(2)}" y="${(y * p).toFixed(2)}" width="${p.toFixed(2)}" height="${p.toFixed(2)}" rx="${r.toFixed(2)}" ry="${r.toFixed(2)}"/>`;
+      }
+    }
+    // Os três olhos desenhados à mão, com cantos arredondados.
+    const olho = (cx, cy) => {
+      const externo = `<rect x="${(cx * p).toFixed(2)}" y="${(cy * p).toFixed(2)}" width="${(7 * p).toFixed(2)}" height="${(7 * p).toFixed(2)}" rx="${(p * 2).toFixed(2)}" fill="none" stroke="currentColor" stroke-width="${p.toFixed(2)}"/>`;
+      const interno = `<rect x="${((cx + 2) * p).toFixed(2)}" y="${((cy + 2) * p).toFixed(2)}" width="${(3 * p).toFixed(2)}" height="${(3 * p).toFixed(2)}" rx="${(p * 0.9).toFixed(2)}"/>`;
+      return externo + interno;
+    };
+    return `<svg width="${lado}" height="${lado}" viewBox="0 0 ${lado} ${lado}" role="img" aria-label="QR code para pagamento PIX" style="color:#1a1c20;fill:#1a1c20">
+      ${pontos}${olho(0, 0)}${olho(n - 7, 0)}${olho(0, n - 7)}
+    </svg>`;
+  }
+
+  async function abrirFatura(contaId) {
+    let f;
+    try {
+      f = await Api.get(`/api/contas-auto/${contaId}/fatura`);
+    } catch (err) {
+      toast(err.message || 'Fatura indisponível.', 'error');
+      return;
+    }
+
+    openModal(`
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:6px">
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <span class="label">${f.fornecedor} · UC ${f.unidadeConsumidora}</span>
+          <h2 style="margin:0;font:300 26px var(--font-serif)">${rotuloCompetencia(f.competencia)}</h2>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          <span style="font:300 28px var(--font-serif);color:var(--ink)">${centavosToBRL(f.valorCentavos)}</span>
+          <span style="font:300 13px var(--font-serif);color:var(--muted)">vence ${formatDateBR(f.vencimento)}</span>
+        </div>
+      </div>
+      ${f.simulado ? `<div style="display:flex;gap:11px;padding:13px 15px;background:var(--warn-bg);border:1px solid #e6dcc2;margin-bottom:18px"><span style="width:4px;flex:none;background:var(--warn-ink)"></span><span style="font:300 13px/1.6 var(--font-serif);color:var(--ink-soft)">Fatura <b style="font-weight:500">simulada</b>: o adaptador da ${f.fornecedor} ainda não acessa o portal real. Os códigos abaixo são de demonstração e não devem ser pagos.</span></div>` : ''}
+
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:start">
+        <div class="qr-caixa">
+          <div class="qr-quadro" id="qrAlvo"></div>
+          <span class="qr-legenda">PIX · APONTE A CÂMERA</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span class="label">PIX COPIA E COLA</span>
+            <div class="codigo-copiavel"><code id="txtPix">${f.codigoPix}</code></div>
+            <button class="btn btn-primary" style="align-self:flex-start;padding:11px 22px;font-size:13.5px" data-copiar="txtPix">Copiar código PIX</button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span class="label">CÓDIGO DE BARRAS</span>
+            <div class="codigo-copiavel"><code id="txtBarras">${f.linhaDigitavel}</code></div>
+            <button class="btn btn-ghost" style="align-self:flex-start;padding:11px 22px;font-size:13.5px" data-copiar="txtBarras">Copiar código de barras</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:14px;margin-top:24px;padding-top:18px;border-top:1px solid var(--border)">
+        <label style="display:flex;align-items:center;gap:9px;font:300 14px var(--font-serif);color:var(--ink-soft);cursor:pointer">
+          <input type="checkbox" id="marcarPaga" ${f.situacao === 'paga' ? 'checked' : ''} style="accent-color:#b08d4a"> Já paguei esta fatura
+        </label>
+        <button type="button" class="btn btn-outline" id="fatFechar">Fechar</button>
+      </div>`);
+
+    if (f.qr) el('qrAlvo').innerHTML = svgDoQr(f.qr);
+    else el('qrAlvo').innerHTML = '<span style="font:300 13px var(--font-serif);color:#8d846f">QR indisponível</span>';
+
+    el('fatFechar').addEventListener('click', closeModal);
+    document.querySelectorAll('[data-copiar]').forEach((b) => b.addEventListener('click', async () => {
+      const texto = el(b.dataset.copiar).textContent;
+      try {
+        await navigator.clipboard.writeText(texto);
+      } catch (e) {
+        const t = document.createElement('textarea');
+        t.value = texto; document.body.appendChild(t); t.select();
+        document.execCommand('copy'); t.remove();
+      }
+      const antes = b.textContent;
+      b.textContent = 'Copiado ✓';
+      setTimeout(() => { b.textContent = antes; }, 1800);
+    }));
+    el('marcarPaga').addEventListener('change', async (e) => {
+      await Api.put(`/api/contas-auto/${contaId}/fatura/situacao`, { situacao: e.target.checked ? 'paga' : 'em_aberto' });
+      toast(e.target.checked ? 'Fatura marcada como paga.' : 'Fatura reaberta.');
+      carregarContasAuto();
+      loadEscritorio();
+    });
+  }
+
+  async function abrirNovaContaAuto() {
+    const { fornecedores, chavePadrao } = await Api.get('/api/contas-auto/fornecedores');
+    const opcoes = fornecedores.map((f) => `<option value="${f.chave}">${f.nome}</option>`).join('');
+
+    openModal(`
+      <h2 style="margin:0 0 6px;font:300 26px var(--font-serif)">Buscar conta no portal do fornecedor</h2>
+      <p style="margin:0 0 18px;font:300 14.5px/1.7 var(--font-serif);color:var(--muted)">
+        Informe o acesso do titular ao portal. O sistema consulta a fatura sozinho na data agendada e mostra aqui o
+        código para pagamento.
+      </p>
+      ${chavePadrao ? '<div style="display:flex;gap:11px;padding:13px 15px;background:var(--warn-bg);border:1px solid #e6dcc2;margin-bottom:16px"><span style="width:4px;flex:none;background:var(--warn-ink)"></span><span style="font:300 13px/1.6 var(--font-serif);color:var(--ink-soft)">A senha do portal será guardada cifrada, mas a chave de cifragem ainda é a de desenvolvimento. Defina <b style="font-weight:500">JS_SEGREDO_CHAVE</b> antes de usar credenciais reais.</span></div>' : ''}
+      <form id="autoForm" style="display:flex;flex-direction:column;gap:14px">
+        <div style="display:grid;grid-template-columns:1fr 1.2fr;gap:14px">
+          <div class="field"><label class="label">FORNECEDOR</label><select id="auFornecedor">${opcoes}</select></div>
+          <div class="field"><label class="label">APELIDO DA CONTA</label><input id="auApelido" placeholder="Fatura de luz · sede"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div class="field"><label class="label" id="auLabelLogin">CPF/CNPJ DO TITULAR</label><input id="auLogin" required></div>
+          <div class="field"><label class="label">SENHA DO PORTAL</label><input id="auSenha" type="password" required></div>
+        </div>
+        <button type="button" id="auBuscar" class="btn btn-ghost" style="align-self:flex-start">Consultar unidades consumidoras</button>
+
+        <div id="auUnidades" class="hidden" style="display:flex;flex-direction:column;gap:10px;padding:16px 18px;background:#f2ede1;border:1px solid var(--border)">
+          <span class="label">UNIDADE CONSUMIDORA</span>
+          <span id="auAviso" style="font:300 13px/1.6 var(--font-serif);color:var(--muted-2)"></span>
+          <div id="auLista" style="display:flex;flex-direction:column;gap:8px"></div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:4px">
+          <button type="button" class="btn btn-outline" id="auCancel">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="auSalvar" disabled>Cadastrar e buscar fatura</button>
+        </div>
+      </form>`);
+
+    el('auCancel').addEventListener('click', closeModal);
+
+    el('auBuscar').addEventListener('click', async () => {
+      const btn = el('auBuscar');
+      btn.textContent = 'Consultando o portal…'; btn.disabled = true;
+      try {
+        const r = await Api.post('/api/contas-auto/unidades', {
+          fornecedor: el('auFornecedor').value, login: el('auLogin').value, senha: el('auSenha').value
+        });
+        el('auUnidades').classList.remove('hidden');
+        el('auAviso').textContent = r.unidades.length > 1
+          ? `Foram encontradas ${r.unidades.length} unidades neste cadastro. Escolha de qual delas buscar a fatura.`
+          : 'Uma unidade encontrada neste cadastro.';
+        el('auLista').innerHTML = r.unidades.map((u, i) => `
+          <label style="display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--panel);border:1px solid var(--border-soft);cursor:pointer">
+            <input type="radio" name="uc" value="${u.numero}" ${i === 0 && r.unidades.length === 1 ? 'checked' : ''} style="margin-top:3px;accent-color:#b08d4a">
+            <span style="display:flex;flex-direction:column;gap:2px">
+              <span style="font:400 14.5px var(--font-serif);color:var(--ink)">UC ${u.numero}</span>
+              <span style="font:300 12.5px/1.5 var(--font-serif);color:var(--muted)">${u.endereco}</span>
+            </span>
+          </label>`).join('');
+        const marcar = () => { el('auSalvar').disabled = !document.querySelector('input[name="uc"]:checked'); };
+        document.querySelectorAll('input[name="uc"]').forEach((i) => i.addEventListener('change', marcar));
+        marcar();
+      } catch (err) {
+        toast(err.message || 'Não foi possível consultar o portal.', 'error');
+      }
+      btn.textContent = 'Consultar unidades consumidoras'; btn.disabled = false;
+    });
+
+    el('autoForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const uc = document.querySelector('input[name="uc"]:checked');
+      if (!uc) { toast('Escolha a unidade consumidora.', 'error'); return; }
+      try {
+        await Api.post('/api/contas-auto', {
+          fornecedor: el('auFornecedor').value, apelido: el('auApelido').value,
+          login: el('auLogin').value, senha: el('auSenha').value, unidadeConsumidora: uc.value
+        });
+        toast('Conta cadastrada e fatura obtida.');
+        closeModal();
+        carregarContasAuto();
+        loadEscritorio();
+      } catch (err) {
+        toast(err.message || 'Não foi possível cadastrar.', 'error');
+      }
+    });
   }
 
   async function loadEscritorio() {
+    carregarContasAuto();
     const res = await Api.get('/api/financeiro/contas');
     el('escTotal').textContent = centavosToBRL(res.totals.totalMes);
     el('escVence').textContent = centavosToBRL(res.totals.venceEmBreve);

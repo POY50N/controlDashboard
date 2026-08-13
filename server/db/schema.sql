@@ -123,6 +123,60 @@ CREATE TABLE IF NOT EXISTS colaborador_permissoes (
   UNIQUE (owner_id, grantee_id)
 );
 
+-- Ajustes do escritório (agendamentos etc.), em pares chave/valor.
+CREATE TABLE IF NOT EXISTS configuracoes (
+  chave TEXT PRIMARY KEY,
+  valor TEXT,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Foto do mês fechado: os totais ficam congelados aqui para consulta e
+-- exportação, mesmo que os lançamentos mudem depois.
+CREATE TABLE IF NOT EXISTS fechamentos_financeiros (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  competencia TEXT NOT NULL UNIQUE,      -- 'YYYY-MM'
+  recebido_centavos INTEGER NOT NULL DEFAULT 0,
+  a_receber_centavos INTEGER NOT NULL DEFAULT 0,
+  vencido_centavos INTEGER NOT NULL DEFAULT 0,
+  despesas_centavos INTEGER NOT NULL DEFAULT 0,
+  lancamentos INTEGER NOT NULL DEFAULT 0,
+  detalhes TEXT,                          -- JSON com as linhas do mês
+  fechado_em TEXT NOT NULL DEFAULT (datetime('now')),
+  automatico INTEGER NOT NULL DEFAULT 1
+);
+
+-- Contas do escritório buscadas sozinhas no portal do fornecedor.
+CREATE TABLE IF NOT EXISTS contas_automaticas (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  fornecedor TEXT NOT NULL,               -- 'celesc'
+  apelido TEXT NOT NULL,
+  categoria TEXT,
+  login TEXT NOT NULL,
+  senha_cifrada TEXT NOT NULL,
+  unidade_consumidora TEXT,
+  ativo INTEGER NOT NULL DEFAULT 1,
+  ultima_verificacao TEXT,
+  ultimo_status TEXT,                     -- 'ok' | 'erro' | 'pendente'
+  ultima_mensagem TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Faturas trazidas do portal do fornecedor.
+CREATE TABLE IF NOT EXISTS faturas_automaticas (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  conta_automatica_id INTEGER NOT NULL REFERENCES contas_automaticas(id),
+  conta_escritorio_id INTEGER REFERENCES contas_escritorio(id),
+  competencia TEXT,
+  vencimento TEXT,
+  valor_centavos INTEGER NOT NULL DEFAULT 0,
+  linha_digitavel TEXT,
+  codigo_pix TEXT,
+  situacao TEXT NOT NULL DEFAULT 'em_aberto',
+  obtida_em TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (conta_automatica_id, competencia)
+);
+
 CREATE TABLE IF NOT EXISTS sync_meta (
   key TEXT PRIMARY KEY,
   value TEXT

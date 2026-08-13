@@ -77,7 +77,21 @@
   <div class="a2-form-side">
     <div class="a2-form-inner">
 
-      <div style="display:flex;flex-direction:column;gap:8px">
+      <!-- Já existe sessão: não faz sentido pedir login de novo -->
+      <div id="jaConectado" class="hidden" style="display:flex;flex-direction:column;gap:16px;padding:22px;background:#f2ede1;border:1px solid var(--border);border-top:2px solid var(--gold-2);animation:enterUp .4s both">
+        <div style="display:flex;align-items:center;gap:13px">
+          <span id="jaInicial" class="a2-avatar">—</span>
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <span id="jaNome" style="font:400 17px 'Spectral',serif;color:#26241f"></span>
+            <span id="jaPapel" style="font:700 8.5px 'Space Mono',monospace;letter-spacing:.16em;color:#8d846f">SESSÃO ATIVA</span>
+          </div>
+        </div>
+        <span style="font:300 14px/1.65 'Spectral',serif;color:#5f5a4f">Você já está conectado. Não é preciso entrar de novo.</span>
+        <button id="jaContinuar" class="btn btn-primary btn-block">Continuar</button>
+        <button id="jaTrocar" class="btn-text" style="align-self:flex-start">Entrar com outra conta</button>
+      </div>
+
+      <div id="blocoLogin" style="display:flex;flex-direction:column;gap:8px">
         <h2 id="tituloEtapa" style="margin:0;font:300 30px 'Spectral',serif;color:#26241f">Acessar meu portal</h2>
         <span id="subtituloEtapa" style="font:300 15px/1.7 'Spectral',serif;color:#7d776a">Comece pelo seu usuário ou documento.</span>
       </div>

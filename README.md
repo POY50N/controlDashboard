@@ -178,6 +178,65 @@ apenas escondendo o botão.
 
 ---
 
+## Relatório financeiro por mês
+
+Na aba **Financeiro** há um seletor de **mês** e um botão **Exportar
+relatório**. Um mês pode estar:
+
+- **em aberto** — os valores acompanham os lançamentos em tempo real;
+- **fechado** — os totais foram congelados e não mudam mais, mesmo que
+  alguém altere um lançamento antigo.
+
+### Fechamento automático
+
+Todo dia **1º às 00:00** (ajustável) o sistema guarda uma cópia do mês
+anterior em `fechamentos_financeiros` e recomeça o acompanhamento. O
+agendador roda a cada minuto, só age uma vez por competência e recupera meses
+atrasados — então o servidor pode ficar dias desligado sem perder um
+fechamento.
+
+Para mudar a data/hora: **Financeiro → "Agendamento do fechamento"**. O dia
+vai até 28 para existir em todos os meses. A mesma tela ajusta quando as
+contas automáticas são consultadas (padrão: dia 1º às 06:00).
+
+### Exportação
+
+| Opção | O que baixa |
+|---|---|
+| Último mês fechado | a competência anterior |
+| Mês selecionado | o mês escolhido no seletor |
+| Últimos 12 meses | um ano completo |
+| Período de X a Y | o intervalo escolhido |
+
+Formatos: **Excel (.xlsx)**, **CSV** e **JSON**. O arquivo traz duas abas —
+*Resumo* (recebido, a receber, vencido, despesas e resultado por mês) e
+*Lançamentos* (honorários e despesas, linha a linha).
+
+## Contas automáticas (fatura do fornecedor)
+
+Em **Escritório → "Buscar conta no portal do fornecedor"** cadastra-se o
+acesso do titular ao portal da concessionária. Se o cadastro tiver **mais de
+uma unidade consumidora**, o sistema lista todas e pergunta qual usar.
+
+A partir daí, no dia/hora agendados, a fatura é buscada sozinha, lançada em
+*Contas a pagar* e o cartão do fornecedor mostra o **status**. Clicando em
+**Pagar fatura** aparece o **QR code do PIX** — em um quadro escuro de cantos
+arredondados, com os módulos desenhados sob medida — junto do **código de
+barras**, ambos com botão de copiar. Dá para marcar a fatura como paga sem
+sair do painel.
+
+> **A integração com a CELESC está SIMULADA.** O arquivo
+> `server/lib/fornecedores/celesc.js` devolve dados coerentes (unidades,
+> valor, vencimento, linha digitável e um PIX com CRC válido) para exercitar
+> todo o fluxo, mas **não acessa o portal real**. Para ligar de verdade,
+> basta trocar `listarUnidades` e `buscarFatura` nesse arquivo — nada mais no
+> sistema precisa mudar. Antes disso, verifique se a concessionária oferece
+> API ou débito automático, e os termos de uso do portal.
+>
+> A senha do portal é gravada cifrada (AES-256-GCM). **Defina a variável
+> `JS_SEGREDO_CHAVE`** antes de usar credenciais reais — sem ela, a chave é a
+> de desenvolvimento e não protege nada.
+
 ## Exportar clientes
 
 Na página **Clientes**, logo abaixo da lista, há um botão apenas de texto
