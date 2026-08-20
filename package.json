@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "seed": "node server/db/seed.js",
+    "start": "node server/start.js",
     "server": "node server/start.js",
     "dev": "nodemon server/start.js"
   },
