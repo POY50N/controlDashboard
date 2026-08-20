@@ -1,18 +1,12 @@
 {
-  "name": "painel-jorge-silva-advocacia",
+  "name": "painel-sua-empresa",
   "version": "1.0.0",
-  "description": "Site, portal do cliente e painel administrativo do escritorio Jorge Silva Advocacia, com app desktop offline-first.",
+  "description": "Site, portal do cliente e painel administrativo (versao web).",
   "private": true,
-  "main": "electron/main.js",
   "scripts": {
     "seed": "node server/db/seed.js",
-    "icon": "electron scripts/make-icon.js",
     "server": "node server/start.js",
-    "dev": "nodemon server/start.js",
-    "cloud-sim": "node scripts/start-cloud-sim.js",
-    "electron": "electron .",
-    "electron:dev": "node scripts/dev-electron.js",
-    "dist": "electron-builder --win portable"
+    "dev": "nodemon server/start.js"
   },
   "engines": {
     "node": ">=20.0.0"
@@ -24,39 +18,6 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "electron": "^33.0.0",
-    "electron-builder": "^25.1.8",
     "nodemon": "^3.1.7"
-  },
-  "build": {
-    "appId": "br.adv.jorgesilva.painel",
-    "productName": "Painel Jorge Silva Advocacia",
-    "files": [
-      "electron/**/*",
-      "server/**/*",
-      "public/**/*",
-      "config.json",
-      "node_modules/**/*",
-      "!data/**"
-    ],
-    "extraResources": [
-      {
-        "from": "data/.gitkeep",
-        "to": "data/.gitkeep"
-      },
-      {
-        "from": "build/icon.ico",
-        "to": "icon.ico"
-      }
-    ],
-    "win": {
-      "target": [
-        "portable"
-      ],
-      "icon": "build/icon.ico"
-    },
-    "asarUnpack": [
-      "node_modules/sql.js/**/*"
-    ]
   }
 }

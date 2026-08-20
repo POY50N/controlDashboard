@@ -43,7 +43,7 @@ async function listarUnidades(credenciais) {
         'Rua Augusta, 900 — sala 3',
         'Av. Faria Lima, 2100 — 12º andar'
       ][i % 3],
-      titular: credenciais.titular || 'Jorge Silva Advocacia'
+      titular: credenciais.titular || 'Sua Empresa'
     };
   });
 }

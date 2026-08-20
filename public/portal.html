@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Portal do Cliente · Jorge Silva Advocacia</title>
+<title>Portal do Cliente · Sua Empresa</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -29,8 +29,16 @@
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <span class="brand-mark">JS</span><span class="brand-sep"></span>
-      <span style="display:flex;flex-direction:column;gap:2px"><span class="brand-name">Jorge Silva</span><span class="brand-sub">ADVOCACIA</span></span>
+      <span class="brand-mark"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <defs><linearGradient id="gmPortal" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#e6cd83"/><stop offset="1" stop-color="#8a6a2b"/></linearGradient></defs>
+        <g stroke="url(#gmPortal)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3v15.5"/><path d="M8.7 21h6.6"/><path d="M4.2 7h15.6"/>
+          <path d="M4.2 7L2 12.6a2.4 2.4 0 0 0 4.5 1.7L4.2 7z"/>
+          <path d="M19.8 7l-2.2 5.6a2.4 2.4 0 0 0 4.5 1.7L19.8 7z"/>
+        </g>
+        <circle cx="12" cy="2.3" r="1" fill="url(#gmPortal)"/>
+      </svg></span><span class="brand-sep"></span>
+      <span style="display:flex;flex-direction:column;gap:2px"><span class="brand-name">Sua Empresa</span><span class="brand-sub">ADVOCACIA</span></span>
     </div>
     <div style="display:flex;align-items:center;gap:22px">
       <span style="font:700 8.5px var(--font-mono);letter-spacing:.22em;color:#77736a">PORTAL DO CLIENTE</span>
@@ -42,11 +50,6 @@
           <span class="user-caret" style="color:#77736a;margin-left:6px">▼</span>
         </button>
         <div id="userMenu" class="user-menu down hidden">
-          <span class="menu-hint">APLICATIVO</span>
-          <a href="download.html">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"></path><path d="M7 11l5 5 5-5"></path><path d="M4 20h16"></path></svg>
-            Baixar aplicativo
-          </a>
           <button id="menuSair">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 17l5-5-5-5"></path><path d="M20 12H9"></path><path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5"></path></svg>
             Sair da conta
@@ -116,7 +119,6 @@
   </div>
 </div>
 <script src="js/api.js"></script>
-<script src="js/sync-ui.js"></script>
 <script src="js/user-menu.js"></script>
 <script src="js/portal.js"></script>
 </body>

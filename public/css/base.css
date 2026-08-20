@@ -85,7 +85,8 @@ button{font-family:inherit}
 .tag-mute{background:var(--mute-bg);color:var(--mute-ink)}
 
 .brand{display:flex;align-items:center;gap:13px}
-.brand-mark{font:600 22px var(--font-serif);line-height:1;background:var(--gold-grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand-mark{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;flex:none;line-height:0}
+.brand-mark svg{width:100%;height:100%}
 .brand-sep{width:1px;height:26px;background:linear-gradient(180deg,transparent,var(--gold-2),transparent)}
 .brand-name{font:500 14px/1 var(--font-serif);color:#f0ece4;letter-spacing:.04em}
 .brand-sub{font:700 7px var(--font-mono);letter-spacing:.34em;color:var(--gold-1);text-indent:.34em}

@@ -1,7 +1,4 @@
 {
   "port": 4178,
-  "dbPath": "data/local.sqlite",
-  "syncServerUrl": "http://localhost:4179",
-  "syncIntervalMs": 60000,
-  "syncKey": "jorge-silva-dev-sync-key"
+  "dbPath": "data/local.sqlite"
 }

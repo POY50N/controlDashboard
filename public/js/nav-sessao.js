@@ -1,9 +1,9 @@
 // Faz a navegação das páginas públicas respeitar quem já está logado.
 //
-// Sem isso, um administrador que abre a página de download vê "Acessar
-// portal" e é mandado de volta para a tela de login — um passo inútil, já
-// que ele precisou estar logado para chegar ali. Com sessão ativa, os links
-// viram "Voltar ao painel" (ou "ao portal") e levam direto ao destino.
+// Sem isso, alguém já logado que abre o site vê "Acessar portal" e é
+// mandado de volta para a tela de login — um passo inútil, já que precisou
+// estar logado para chegar ali. Com sessão ativa, os links viram "Voltar ao
+// painel" (ou "ao portal") e levam direto ao destino.
 
 (() => {
   const DESTINO = { admin: 'admin.html', client: 'portal.html' };

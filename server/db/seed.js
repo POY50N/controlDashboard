@@ -16,7 +16,7 @@ async function seed(dbPath = DEFAULT_DB_PATH) {
   db.exec(`
     DELETE FROM sessions; DELETE FROM change_log; DELETE FROM contas_escritorio;
     DELETE FROM honorarios; DELETE FROM andamentos; DELETE FROM processos;
-    DELETE FROM clients; DELETE FROM admins;
+    DELETE FROM clients; DELETE FROM colaborador_permissoes; DELETE FROM admins;
   `);
 
   // O administrador entra por três caminhos: usuário, número da OAB ou o
@@ -25,26 +25,26 @@ async function seed(dbPath = DEFAULT_DB_PATH) {
 
   db.run(
     `INSERT INTO admins (username, nome, oab, documento, telefone, email, cargo, permissoes, password_hash) VALUES (?, ?, ?, ?, ?, ?, 'titular', ?, ?)`,
-    ['jorge', 'Jorge Silva', 'OAB/SP 123.456', '15350946056', '(11) 4000-0000', 'jorge@jorgesilva.adv.br', areas('titular'), hashPassword('admin123')]
+    ['adm', 'Administrador', 'OAB/SP 123.456', '15350946056', '(11) 4000-0000', 'adm@suaempresa.com.br', areas('titular'), hashPassword('admin123')]
   );
 
   // Equipe do escritório, cada um com o perfil de acesso do seu quadro.
   db.run(
     `INSERT INTO admins (username, nome, oab, documento, telefone, email, cargo, permissoes, password_hash) VALUES (?, ?, ?, ?, ?, ?, 'socio', ?, ?)`,
-    ['helena', 'Helena Prado', 'OAB/SP 222.333', '19173864081', '(11) 4000-0003', 'helena@jorgesilva.adv.br', areas('socio'), hashPassword('socia123')]
+    ['helena', 'Helena Prado', 'OAB/SP 222.333', '19173864081', '(11) 4000-0003', 'helena@suaempresa.com.br', areas('socio'), hashPassword('socia123')]
   );
   db.run(
     `INSERT INTO admins (username, nome, oab, documento, telefone, email, cargo, permissoes, password_hash) VALUES (?, ?, ?, ?, ?, ?, 'advogado', ?, ?)`,
-    ['marcos', 'Marcos Tavares', 'OAB/SP 555.111', '04688574060', '(11) 4000-0004', 'marcos@jorgesilva.adv.br', areas('advogado'), hashPassword('adv123')]
+    ['marcos', 'Marcos Tavares', 'OAB/SP 555.111', '04688574060', '(11) 4000-0004', 'marcos@suaempresa.com.br', areas('advogado'), hashPassword('adv123')]
   );
   db.run(
     `INSERT INTO admins (username, nome, oab, documento, telefone, email, cargo, permissoes, password_hash) VALUES (?, ?, ?, ?, ?, ?, 'secretaria', ?, ?)`,
-    ['beatriz', 'Beatriz Nunes', null, '39447856005', '(11) 4000-0001', 'beatriz@jorgesilva.adv.br', areas('secretaria'), hashPassword('colab123')]
+    ['beatriz', 'Beatriz Nunes', null, '39447856005', '(11) 4000-0001', 'beatriz@suaempresa.com.br', areas('secretaria'), hashPassword('colab123')]
   );
   // Estagiário não recebe nada por padrão: aqui, alguém marcou duas áreas na mão.
   db.run(
     `INSERT INTO admins (username, nome, oab, documento, telefone, email, cargo, permissoes, password_hash) VALUES (?, ?, ?, ?, ?, ?, 'estagiario', ?, NULL)`,
-    ['rafael', 'Rafael Moreira', 'OAB/SP 654.321', '68169461070', '(11) 4000-0002', 'rafael@jorgesilva.adv.br', JSON.stringify(['clientes', 'processos'])]
+    ['rafael', 'Rafael Moreira', 'OAB/SP 654.321', '68169461070', '(11) 4000-0002', 'rafael@suaempresa.com.br', JSON.stringify(['clientes', 'processos'])]
   );
 
   const clients = [
@@ -228,7 +228,7 @@ async function seed(dbPath = DEFAULT_DB_PATH) {
   console.log('=== CREDENCIAIS DE TESTE ===');
   console.log('');
   console.log('ADMINISTRADOR / TITULAR (senha "admin123") — os três acessos levam ao painel:');
-  console.log('  · usuário .... jorge');
+  console.log('  · usuário .... adm');
   console.log('  · OAB ........ OAB/SP 123.456  (ou apenas 123456)');
   console.log('  · CPF ........ 153.509.460-56');
   console.log('');
@@ -243,7 +243,7 @@ async function seed(dbPath = DEFAULT_DB_PATH) {
   console.log('      áreas: apenas clientes e processos (marcadas manualmente)');
   console.log('');
   console.log('CARTEIRA DE CLIENTES (quem é responsável por quem):');
-  console.log('  · Jorge (titular) . vê TUDO, sem precisar de autorização');
+  console.log('  · Titular ......... vê TUDO, sem precisar de autorização');
   console.log('  · Marcos .......... Construtora Alvorada');
   console.log('  · Beatriz ......... Ana Paula Costa, Carlos Menezes');
   console.log('  · Rafael .......... Ricardo, Renata, Padaria Estrela');

@@ -1,8 +1,11 @@
-# Jorge Silva Advocacia — Site, Portal do Cliente e Painel do Advogado
+# Sua Empresa — Site, Portal do Cliente e Painel do Advogado
 
-Sistema completo do escritório: site institucional, área de acesso, portal do
-cliente, painel administrativo e **aplicativo desktop offline-first** que
-sincroniza com a web quando há internet.
+Sistema completo do escritório (versão web): site institucional, área de
+acesso, portal do cliente e painel administrativo.
+
+> Esta é a branch **webOnly**: mantém apenas o necessário para rodar e testar
+> a versão web. O aplicativo desktop e a sincronização offline-first vivem na
+> branch `main`.
 
 ---
 
@@ -20,7 +23,7 @@ npm run server    # http://localhost:4178
 
 | Entrar por | Valor |
 |---|---|
-| Usuário | `jorge` |
+| Usuário | `adm` |
 | OAB | `OAB/SP 123.456` (ou só `123456`) |
 | CPF próprio | `153.509.460-56` |
 
@@ -33,7 +36,7 @@ npm run server    # http://localhost:4178
 | Beatriz Nunes | Secretária | `beatriz` | `colab123` | visão, clientes, processos, financeiro | Ana Paula Costa, Carlos Menezes |
 | Rafael Moreira | Estagiário | `rafael` | *(primeiro acesso)* | só clientes e processos | Ricardo, Renata, Padaria Estrela |
 
-O titular (Jorge) responde pelos demais clientes e **vê todos**.
+O titular responde pelos demais clientes e **vê todos**.
 
 **Clientes** — entram por **usuário**, **CPF/CNPJ** ou **telefone**:
 
@@ -88,7 +91,6 @@ mesma tela — senha, ou criação de senha no primeiro acesso.
 | `public/acesso.html` | Tela única de acesso (animação A2) |
 | `public/admin.html` | Painel do advogado |
 | `public/portal.html` | Portal do cliente |
-| `public/download.html` | Página de download do aplicativo |
 
 ### Quem enxerga o quê (permissões entre colaboradores)
 
@@ -148,33 +150,14 @@ equipe junto com a lista de quem já tem acesso ao painel.
 
 - O colaborador é criado **sem senha**: ele define a dele no primeiro acesso,
   como acontece com os clientes.
-- Entra pelo mesmo login (usuário, OAB, CPF ou telefone) e pelo mesmo
-  aplicativo desktop.
+- Entra pelo mesmo login (usuário, OAB, CPF ou telefone).
 - O **titular não pode ser removido**, e ninguém pode remover o próprio
   acesso. Remover é uma desativação (`ativo = 0`) — o histórico continua no
   banco, mas a conta deixa de ser reconhecida no login.
-- Os cadastros entram no diário de alterações e **sincronizam** com a web como
-  qualquer outro registro.
 
 Essa opção existe apenas no menu do painel administrativo; o menu do portal do
 cliente não a possui, e a rota `/api/colaboradores` responde **401** para
 quem não é administrador.
-
-### Download do aplicativo
-
-Chega-se à página de download por dois caminhos: o botão **"Baixar o
-aplicativo"** no topo da página inicial, ou clicando na **área do usuário
-logado** (canto inferior esquerdo do painel / canto superior direito do
-portal) e escolhendo **"Baixar aplicativo"**.
-
-Na página, à **esquerda** fica a versão **Windows** e à **direita** os botões
-separados de **App Store** e **Google Play**.
-
-A versão Windows é **exclusiva do administrador**, porque o aplicativo desktop
-é a ferramenta de administração do escritório. Quem não é administrador vê no
-lugar dela um aviso explicando isso. A restrição é aplicada **no servidor**
-(`GET /api/download/windows` responde 401 para visitantes e clientes), não
-apenas escondendo o botão.
 
 ---
 
@@ -250,90 +233,11 @@ Na página **Clientes**, logo abaixo da lista, há um botão apenas de texto
 
 ---
 
-## Aplicativo desktop (offline-first)
-
-```bash
-npm run icon            # gera build/icon.ico (só quando a marca mudar)
-npm run electron        # roda o app
-npm run dist            # gera o executável em dist/
-```
-
-O app sobe **o mesmo servidor e o mesmo banco** dentro da própria máquina, em
-uma porta local. Ele funciona **100% sem internet**.
-
-### É um aplicativo administrativo
-
-O desktop é a ferramenta de administração do escritório, e isso é aplicado de
-verdade — não só escondendo botões:
-
-- ele **abre direto na tela de acesso** (`acesso.html`); não existe site
-  institucional dentro do aplicativo;
-- a tela se apresenta como **"Acesso administrativo"**, com a marca ampliada e
-  centralizada, e aceita **usuário, OAB ou CPF do advogado**;
-- o servidor embutido roda com `adminOnly: true`: um CPF de cliente **nem é
-  reconhecido** na verificação, e um POST de login de cliente responde
-  **403**.
-
-### Ícone
-
-`build/icon.ico` é o monograma **JS** sozinho — sem fundo e sem o arco
-dourado, com transparência real. É gerado por `npm run icon`, que renderiza a
-marca com o próprio Electron e monta o `.ico` (16 a 256 px). Ele é embutido no
-executável e usado na janela e na barra de tarefas.
-
-### Iniciar com o sistema
-
-Na tela de acesso do aplicativo há um **toggle discreto** — *"Abrir o painel
-automaticamente ao ligar o computador"*. Ele grava/remove a entrada de
-inicialização do Windows via `app.setLoginItemSettings`. No build portátil o
-registro aponta para `PORTABLE_EXECUTABLE_FILE` (o `.exe` de verdade), e não
-para a cópia temporária que o Windows cria ao executá-lo.
-
-### Sincronização
-
-O app **procura a conexão sozinho** — a cada 10 s enquanto está offline e a
-cada 60 s quando conectado. No rodapé há apenas um indicador discreto:
-**Offline**, **Online**, *N para enviar* ou *conflitos*. Clicando nele abre-se
-o detalhamento.
-
-Toda alteração feita sem conexão é registrada em um diário (`change_log`) com
-uma descrição em português. **Ao sair do estado offline**, se algo foi alterado
-na máquina, aparece sozinho um pop-up perguntando o que fazer:
-
-- **Manter os dados deste computador** — envia o que foi feito offline;
-- **Usar os dados do servidor** — descarta as alterações locais e baixa a
-  versão da web (com confirmação, porque é destrutivo);
-- **Ver o que mudou neste computador** — abre a lista item a item;
-- **Decidir depois** — fecha sem sincronizar.
-
-Se **os dois lados** alteraram o mesmo registro, nada é sobrescrito em
-silêncio: o sistema mostra as duas versões lado a lado e pergunta qual manter.
-
-### Atualização do banco existente
-
-O banco do app fica em `%APPDATA%\painel-jorge-silva-advocacia\local.sqlite` e
-**sobrevive às atualizações**. Como `CREATE TABLE IF NOT EXISTS` não acrescenta
-colunas novas, `server/db/index.js` roda uma **migração automática** ao abrir:
-adiciona as colunas que faltam, promove o admin mais antigo a titular se não
-houver nenhum e atribui a ele os clientes sem responsável.
-
-Para testar a sincronização localmente, suba a instância que representa a web:
-
-```bash
-npm run cloud-sim       # http://localhost:4179 (banco data/cloud.sqlite)
-```
-
-O endereço do servidor de sincronização fica em `config.json` →
-`syncServerUrl`. Basta trocar para o endereço real quando o sistema for
-publicado.
-
----
-
 ## Estrutura
 
 ```
 server/
-  app.js              cria o Express + banco (usado pela web e pelo desktop)
+  app.js              cria o Express + banco
   start.js            servidor web
   db/
     schema.sql        estrutura das tabelas
@@ -342,16 +246,9 @@ server/
   lib/
     password.js       hash scrypt
     session.js        sessões por cookie
-    sync-client.js    motor de sincronização (lado desktop)
-    sync-tables.js    tabelas que participam da sincronização
   routes/             auth, clients, processos, financeiro, me, dashboard,
-                      export, sync
+                      export, colaboradores, contas-auto, relatorios
 public/               site, portal, painel (HTML/CSS/JS sem build)
-electron/             main.js (processo principal) + preload.js (ponte segura)
-scripts/
-  make-icon.js        gera build/icon.ico (monograma JS, sem fundo)
-  start-cloud-sim.js  instância que representa a web, para testar sync
-build/                icon.ico / icon.png da marca
 data/                 bancos SQLite (não versionados)
 ```
 

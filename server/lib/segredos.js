@@ -8,7 +8,7 @@
 const crypto = require('crypto');
 
 function chave() {
-  const bruta = process.env.JS_SEGREDO_CHAVE || 'desenvolvimento-jorge-silva-advocacia';
+  const bruta = process.env.JS_SEGREDO_CHAVE || 'desenvolvimento-chave-local';
   return crypto.createHash('sha256').update(bruta).digest();
 }
 

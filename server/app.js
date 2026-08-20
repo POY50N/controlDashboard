@@ -2,10 +2,7 @@ const path = require('path');
 const express = require('express');
 const { createDatabase } = require('./db');
 
-// `adminOnly` is set by the desktop app: that build is the office's
-// administration tool, so client accounts must not be able to sign in there
-// even though it serves the same pages.
-async function createApp({ dbPath, syncKey = 'jorge-silva-dev-sync-key', adminOnly = false }) {
+async function createApp({ dbPath, adminOnly = false }) {
   const db = createDatabase(path.resolve(dbPath));
   await db.open();
 
@@ -23,8 +20,6 @@ async function createApp({ dbPath, syncKey = 'jorge-silva-dev-sync-key', adminOn
   app.use('/api/me', require('./routes/me')(db));
   app.use('/api/dashboard', require('./routes/dashboard')(db));
   app.use('/api/export', require('./routes/export')(db));
-  app.use('/api/download', require('./routes/download')(db));
-  app.use('/api/sync', require('./routes/sync')(db, syncKey));
 
   app.get('/api/health', (req, res) => res.json({ ok: true, db: db.path, adminOnly }));
 

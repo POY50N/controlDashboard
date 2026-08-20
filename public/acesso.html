@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Acesso · Jorge Silva Advocacia</title>
+<title>Acesso · Sua Empresa</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -13,7 +13,7 @@
   .a2-hero{display:flex;flex-direction:column;justify-content:space-between;padding:56px 64px;
     background:radial-gradient(120% 70% at 30% 20%,rgba(255,255,255,.95),rgba(255,255,255,0) 58%),radial-gradient(110% 60% at 80% 90%,rgba(198,190,176,.5),rgba(255,255,255,0) 55%),linear-gradient(135deg,#f4f1ea,#e7e1d6 46%,#efeae1 68%,#ded7c9)}
   .a2-mark{width:96px;height:96px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#f2ede4,#e4ddd0) padding-box,linear-gradient(135deg,#e6cd83,#8a6a2b 50%,#c9a24d) border-box;border:2px solid transparent;box-shadow:0 4px 18px rgba(80,60,20,.18),inset 0 1px 2px rgba(255,255,255,.7);animation:ring .7s cubic-bezier(.2,.8,.3,1) both}
-  .a2-mark-txt{font:600 40px 'Spectral',serif}
+  .a2-mark-txt{width:62%;height:62%}
   .a2-hero-main{display:flex;flex-direction:column;align-items:flex-start;gap:13px}
   .a2-wordmark{font:500 24px 'Spectral',serif;letter-spacing:.1em;background:linear-gradient(135deg,#b08d4a,#7a5c25 50%,#caa24e);-webkit-background-clip:text;background-clip:text;color:transparent}
   .a2-sub{font:700 9.5px 'Space Mono',monospace;letter-spacing:.44em;color:#8a6a2b;text-indent:.44em}
@@ -26,7 +26,6 @@
   body.is-desktop .a2-hero{justify-content:center;gap:40px}
   body.is-desktop .a2-hero-main{align-items:center;text-align:center}
   body.is-desktop .a2-mark{width:35%;height:auto;aspect-ratio:1/1;max-width:300px;min-width:150px}
-  body.is-desktop .a2-mark-txt{font-size:clamp(46px,7.2vw,120px)}
   body.is-desktop .a2-wordmark{font-size:30px}
   body.is-desktop .a2-sub{font-size:11px}
   body.is-desktop .a2-rodape{align-items:center;text-align:center}
@@ -62,8 +61,25 @@
   <div class="a2-hero">
     <a id="voltarSite" href="index.html" style="align-self:flex-start;font:300 13.5px 'Spectral',serif;color:#8a6a2b">← Voltar ao site</a>
     <div class="a2-hero-main">
-      <div class="a2-mark"><span class="a2-mark-txt" style="background:linear-gradient(135deg,#caa24e,#8a6a2b 45%,#e6cd83 72%,#9c7a34);-webkit-background-clip:text;background-clip:text;color:transparent">JS</span></div>
-      <div class="a2-wordmark">JORGE SILVA</div>
+      <div class="a2-mark">
+        <svg class="a2-mark-txt" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="ljAcesso" x1="10" y1="10" x2="90" y2="95" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#caa24e"/><stop offset=".45" stop-color="#8a6a2b"/>
+              <stop offset=".72" stop-color="#e6cd83"/><stop offset="1" stop-color="#9c7a34"/>
+            </linearGradient>
+          </defs>
+          <path d="M38 40C30 52 22 62 17 88 L83 88 C78 62 70 52 62 40 C55 45 45 45 38 40Z" fill="url(#ljAcesso)"/>
+          <path d="M40 38C28 34 16 33 10 33" stroke="url(#ljAcesso)" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+          <path d="M60 38C72 34 84 33 90 33" stroke="url(#ljAcesso)" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+          <path d="M10 33h80" stroke="url(#ljAcesso)" stroke-width="2.4" stroke-linecap="round"/>
+          <path d="M10 33l-6.5 15a6.5 6.5 0 0 0 13 0L10 33z" stroke="url(#ljAcesso)" stroke-width="2" fill="none" stroke-linejoin="round"/>
+          <path d="M90 33l-6.5 15a6.5 6.5 0 0 0 13 0L90 33z" stroke="url(#ljAcesso)" stroke-width="2" fill="none" stroke-linejoin="round"/>
+          <circle cx="50" cy="21" r="9" fill="url(#ljAcesso)"/>
+          <rect x="40.5" y="19" width="19" height="3.4" rx="1.6" fill="#2b2410" opacity=".55"/>
+        </svg>
+      </div>
+      <div class="a2-wordmark">SUA EMPRESA</div>
       <div class="a2-sub">ADVOCACIA</div>
       <h1 id="heroTitulo" style="margin:18px 0 0;font:300 38px/1.18 'Spectral',serif;color:#26241f">Área do cliente</h1>
       <p id="heroTexto" style="margin:0;max-width:430px;font:300 16px/1.75 'Spectral',serif;color:#5f5a4f">Informe seu usuário, CPF/CNPJ ou telefone. Reconhecemos o cadastro e abrimos apenas o passo seguinte — sem trocar de tela.</p>
@@ -188,7 +204,6 @@
   </div>
 </div>
 <script src="js/api.js"></script>
-<script src="js/sync-ui.js"></script>
 <script src="js/acesso.js"></script>
 </body>
 </html>
